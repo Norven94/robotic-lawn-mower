@@ -1,26 +1,39 @@
 import inquirer
+from enum import Enum
+
+#def alternativen i en Enum
+class SimOption(Enum):
+    RANDOM = ("random", "Slumpmässig rörelse")
+    WIRED = ("wired", "Utsatt slinga")
+
+    def __init__(self, key, label):
+        self.key = key
+        self.label = label
+
+# Skapa listan med labels för inquirer (de som kommer visas för användaren)
+choices = [option.label for option in SimOption]
+    
+questions = [
+    inquirer.List(
+        "choice", #namnet på variablen där svaret sparas temporärt
+        message = "Välj körläge", #text som visas för användare
+        choices = choices, #de alternativ användaren kan välja mellan
+    )        
+]
 
 while True:
     #skriver ut en välkomsthälsning varje gång loopen börjar om
     print("Välkommen till robotgräsklipparen!")
 
-    # Skapa listan med val
-    questions = [
-        inquirer.List(
-            "choice", #namnet på variablen där svaret sparas temporärt
-            message="Välj körläge", #text som visas för användare
-            choices=["Slumpmässig rörelse", "Utsatt slinga"], #de alternativ användaren kan välja mellan
-        )        
-    ]
+    #hämta svaret (labeln) från användaren 
+    selected_label = inquirer.prompt(questions)["choice"] #hämta det valda alternativet från svaret
 
-    #hämta svaret från användaren (pilar + enter)
-    #hämtar svaret via nyckeln - "choice"
-    answer = inquirer.prompt(questions)["choice"]
+    #Hitta vilket Enum-objek som matchar valda labeln
+    answer = next(opt for opt in SimOption if opt.label == selected_label)
 
-    #logik för att hantera valen
-    if answer == "Slumpmässig rörelse":
-        print("Du har valt slumpmässig rörelse.") #skriver ut dte som står i parantesen
-        break #bryter loopen och avslutar programmet efter valet
-    elif answer == "Utsatt slinga":
-        print("Du har valt utsatt slinga.")
-        break
+    if answer == SimOption.RANDOM:
+        print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
+    elif answer == SimOption.WIRED:
+        print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
+
+    break #bryter loopen och avslutar programmet efter valet
