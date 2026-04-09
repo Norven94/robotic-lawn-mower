@@ -1,11 +1,13 @@
 import inquirer
 from enum import Enum
 
+from settings import DEFAULT_ROBOT_NAME
+
 #fråga användaren efetr namn på roboten
 namn_input = input("Vad ska robotgräsklipparen heta? ")
 #om användaren inte skriver något, sätt namnet till "Per" annars, sätt namnet till det användaren skrev in.
 if namn_input == "":
-    robot_namn = "Per"
+    robot_namn = DEFAULT_ROBOT_NAME
 else:
     robot_namn = namn_input
 
@@ -32,8 +34,7 @@ questions = [
 ]
 
 while True:
-    #skriver ut en välkomsthälsning varje gång loopen börjar om
-    print("Välkommen till robotgräsklipparen!")
+    
 
     #hämta svaret (labeln) från användaren 
     selected_label = inquirer.prompt(questions)["choice"] #hämta det valda alternativet från svaret
@@ -48,3 +49,5 @@ while True:
 
     break #bryter loopen och avslutar programmet efter valet
 
+#skriver ut en välkomsthälsning varje gång loopen börjar om
+print("Välkommen till robotgräsklipparen!")
