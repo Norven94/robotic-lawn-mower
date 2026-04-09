@@ -10,6 +10,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 
 import settings
+from settings import ROBOT_SIZE, ROBOT_RADIUS
 
 if TYPE_CHECKING:
 	from controller import Controller
@@ -46,8 +47,38 @@ class LawnWorld:
 		figure, axis = plt.subplots(figsize=settings.FIGURE_SIZE)
 		axis.set_xlim(self.min_x, self.max_x)
 		axis.set_ylim(self.min_y, self.max_y)
+		axis.set_aspect("equal", adjustable="box")
 		axis.set_title("Lets add robot name from CLI here")
 		axis.set_facecolor(settings.LAWN_COLOR)
+
+		# Outer rectangle: full lawn boundary.
+		lawn_boundary = Rectangle(
+			(self.min_x, self.min_y),
+			self.max_x - self.min_x,
+			self.max_y - self.min_y,
+			fill=False,
+			edgecolor="black",
+			linewidth=2,
+			zorder=2,
+		)
+		axis.add_patch(lawn_boundary)
+
+		# Inner rectangle: where robot center is allowed to move.
+		allowed_min_x = self.min_x + robot.radius
+		allowed_max_x = self.max_x - robot.radius
+		allowed_min_y = self.min_y + robot.radius
+		allowed_max_y = self.max_y - robot.radius
+		allowed_boundary = Rectangle(
+			(allowed_min_x, allowed_min_y),
+			allowed_max_x - allowed_min_x,
+			allowed_max_y - allowed_min_y,
+			fill=False,
+			edgecolor=settings.BOUNDARY_COLOR,
+			linewidth=2,
+			linestyle="--",
+			zorder=2,
+		)
+		axis.add_patch(allowed_boundary)
 
 		# Prepares visual elements to show where the robot has mowed
 		# and where the robot currently is.
@@ -55,7 +86,7 @@ class LawnWorld:
 			[],
 			[],
 			color=settings.PATH_COLOR,
-			linewidth=15,
+			linewidth=6,
 			solid_capstyle="round",
 			solid_joinstyle="round",
 			zorder=1,
@@ -63,6 +94,7 @@ class LawnWorld:
 		robot_patch = Circle((robot.x, robot.y), radius=robot.radius, color=settings.ROBOT_COLOR, zorder=3)
 		axis.add_patch(robot_patch)
 		axis.add_line(path_line)
+		
 
 		# This function is called by FuncAnimation during each frame.
 		# It updates the robot's position based on the controllers 

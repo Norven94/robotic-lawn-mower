@@ -13,6 +13,7 @@ This project simulates a simple autonomous robot lawn mower using matplotlib ani
 
 ```bash
 pip install matplotlib
+pip install inquirer
 ```
 
 ## Run
