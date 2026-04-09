@@ -4,5 +4,5 @@ from controller import RandomController, WireController
 
 @dataclass
 class AppState:
-    simulation_option: RandomController | WireController | None = None
+    simulation_option: str | None = None
     is_running: bool = False

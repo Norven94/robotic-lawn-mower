@@ -1,17 +1,9 @@
+from dataclasses import dataclass
+
 import inquirer
 from enum import Enum
 
 from settings import DEFAULT_ROBOT_NAME
-
-#fråga användaren efetr namn på roboten
-namn_input = input("Vad ska robotgräsklipparen heta? ")
-#om användaren inte skriver något, sätt namnet till "Per" annars, sätt namnet till det användaren skrev in.
-if namn_input == "":
-    robot_namn = DEFAULT_ROBOT_NAME
-else:
-    robot_namn = namn_input
-
-print("Robotgräsklipparen heter " + robot_namn + "!")
 
 #def alternativen i en Enum
 class SimOption(Enum):
@@ -22,32 +14,44 @@ class SimOption(Enum):
         self.key = key
         self.label = label
 
-# Skapa listan med labels för inquirer (de som kommer visas för användaren)
-choices = [option.label for option in SimOption]
-    
-questions = [
-    inquirer.List(
-        "choice", #namnet på variablen där svaret sparas temporärt
-        message = "Välj körläge", #text som visas för användare
-        choices = choices, #de alternativ användaren kan välja mellan
-    )        
-]
+@dataclass
+class CLI(): 
+    # Skapa listan med labels för inquirer (de som kommer visas för användaren)
+    choices = [option.label for option in SimOption]
+        
+    questions = [
+        inquirer.List(
+            "choice", #namnet på variablen där svaret sparas temporärt
+            message = "Välj körläge", #text som visas för användare
+            choices = choices, #de alternativ användaren kan välja mellan
+        )        
+    ]
 
-while True:
-    
+    def startApplication (self, simulation_option: str | None) -> None:
+        #fråga användaren efetr namn på roboten
+        namn_input = input("Vad ska robotgräsklipparen heta? ")
+        #om användaren inte skriver något, sätt namnet till "Per" annars, sätt namnet till det användaren skrev in.
+        if namn_input == "":
+            robot_namn = DEFAULT_ROBOT_NAME
+        else:
+            robot_namn = namn_input
 
-    #hämta svaret (labeln) från användaren 
-    selected_label = inquirer.prompt(questions)["choice"] #hämta det valda alternativet från svaret
+        print("Robotgräsklipparen heter " + robot_namn + "!")
 
-    #Hitta vilket Enum-objek som matchar valda labeln
-    answer = next(opt for opt in SimOption if opt.label == selected_label)
+        while True:
+            #hämta svaret (labeln) från användaren 
+            selected_label = inquirer.prompt(self.questions)["choice"] #hämta det valda alternativet från svaret
 
-    if answer == SimOption.RANDOM:
-        print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
-    elif answer == SimOption.WIRED:
-        print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
+            #Hitta vilket Enum-objek som matchar valda labeln
+            answer = next(opt for opt in SimOption if opt.label == selected_label)
+            simulation_option = answer.key
 
-    break #bryter loopen och avslutar programmet efter valet
+            if answer == SimOption.RANDOM:
+                print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
+            elif answer == SimOption.WIRED:
+                print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
 
-#skriver ut en välkomsthälsning varje gång loopen börjar om
-print("Välkommen till robotgräsklipparen!")
+            break #bryter loopen och avslutar programmet efter valet
+
+        #skriver ut en välkomsthälsning varje gång loopen börjar om
+        print("Välkommen till robotgräsklipparen!")
