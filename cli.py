@@ -1,6 +1,16 @@
 import inquirer
 from enum import Enum
 
+#fråga användaren efetr namn på roboten
+namn_input = input("Vad ska robotgräsklipparen heta? ")
+#om användaren inte skriver något, sätt namnet till "Per" annars, sätt namnet till det användaren skrev in.
+if namn_input == "":
+    robot_namn = "Per"
+else:
+    robot_namn = namn_input
+
+print("Robotgräsklipparen heter " + robot_namn + "!")
+
 #def alternativen i en Enum
 class SimOption(Enum):
     RANDOM = ("random", "Slumpmässig rörelse")
@@ -37,3 +47,4 @@ while True:
         print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
 
     break #bryter loopen och avslutar programmet efter valet
+
