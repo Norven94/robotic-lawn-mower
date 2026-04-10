@@ -17,11 +17,9 @@ class Controller(Protocol):
 
 class RandomController:
 	def step(self, robot: "Robot", world: "LawnWorld") -> None:
-		if robot.detect_boundary(world):
+		if not robot.move_forward(world):
 			robot.heading = random.randint(0, 360)
 			return
-
-		robot.move_forward(world)
 
 
 class WireController:

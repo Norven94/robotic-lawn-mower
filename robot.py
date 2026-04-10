@@ -46,7 +46,3 @@ class Robot:
 		self.y = next_y
 		world.mark_mowed(self.x, self.y)
 		return True
-
-	def detect_boundary(self, world: "LawnWorld") -> bool:
-		next_x, next_y = self._next_position(self.move_distance)
-		return not world.is_inside(next_x, next_y, padding=self.radius)
