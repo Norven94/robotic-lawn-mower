@@ -13,7 +13,7 @@ class Robot:
 	y: float = settings.ROBOT_START_Y
 	heading: float = settings.ROBOT_START_HEADING
 	move_distance: float = settings.MOVE_DISTANCE
-	radius: float = settings.ROBOT_RADIUS
+	diameter: float = settings.ROBOT_DIAMETER
 	# We can use this to turn off the robot once we know when it's 
     # done with the entire lawn.
 	is_active: bool = field(default=True, init=False)
@@ -30,7 +30,7 @@ class Robot:
 	def move_forward(self, world: "LawnWorld", next_x: float, next_y: float) -> bool:
 		if not self.is_active:
 			return False
-		if not world.is_inside(next_x, next_y, padding=self.radius):
+		if not world.is_inside(next_x, next_y, padding=settings.ROBOT_SIZE):
 			return False
 
 		self.x = next_x
