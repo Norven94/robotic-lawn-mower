@@ -12,6 +12,9 @@ from matplotlib.patches import Circle, Rectangle
 import settings
 from settings import ROBOT_SIZE, ROBOT_RADIUS
 
+import settings 
+from obstacles import rectangleobstacles
+
 if TYPE_CHECKING:
 	from controller import Controller
 	from robot import Robot
@@ -23,14 +26,28 @@ class LawnWorld:
 	min_y: float = settings.LAWN_MIN_Y
 	max_y: float = settings.LAWN_MAX_Y
 	mowed_points: list[tuple[float, float]] = field(default_factory=list, init=False)
+	obstacles: list = field(default_factory=list, init=False)
+
+	#List for obstacles
+	def __post_init__ (self):
+		house = rectangleobstacles( settings. OFF_SET_PLOT_X, settings. OFF_SET_PLOT_Y, settings. HOUSE_SIZE )
+		self.obstacles.append(house)
 
 	# Helper function to check if a coordinate is within the lawn 
 	# boundaries, with padding for the robot's radius
+	# Obstacles on lawn
 	def is_inside(self, x: float, y: float, padding: float = 0.0) -> bool:
-		return (
+		#Check if robot is on lawn
+		on_lawn = (
 			self.min_x + padding <= x <= self.max_x - padding
 			and self.min_y + padding <= y <= self.max_y - padding
 		)
+		if not on_lawn:
+			return False
+		for obstacle in self.obstacles:
+			if obstacle.is_hitting(x, y, padding):
+				return False
+			return True
 
 	# Adds a coordinate as mowed, which is used for visualization. 
 	def mark_mowed(self, x: float, y: float) -> None:
@@ -79,6 +96,18 @@ class LawnWorld:
 			zorder=2,
 		)
 		axis.add_patch(allowed_boundary)
+		for obstacle in self.obstacles:
+			renderd_obstacle = Rectangle(
+				(obstacle.x, obstacle.y),
+				obstacle.width,
+				obstacle.height,
+				fill=True,
+				facecolor=settings.HOUSE_COLOR,
+				edgecolor= "black",
+				linewidth=2,
+				zorder=2, 
+			)
+			axis.add_patch(renderd_obstacle)
 
 		# Prepares visual elements to show where the robot has mowed
 		# and where the robot currently is.
