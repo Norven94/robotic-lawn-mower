@@ -44,6 +44,13 @@ class LawnWorld:
 	def run_simulation(self, robot: "Robot", controller: "Controller") -> None:
 		self.mark_mowed(robot.x, robot.y)
 
+		#Logik för målet 95%
+		width_tot = self.max_x - self.min_x
+		height_tot = self.max_y - self.min_y
+		#Räkna ut hur många punkter det finns på 95% av ytan
+		points_tot = (width_tot * height_tot) / (settings.MOVE_DISTANCE ** 2)
+		goal_points = points_tot * 0.01
+
 		figure, axis = plt.subplots(figsize=settings.FIGURE_SIZE)
 		axis.set_xlim(self.min_x, self.max_x)
 		axis.set_ylim(self.min_y, self.max_y)
@@ -100,7 +107,16 @@ class LawnWorld:
 		# It updates the robot's position based on the controllers 
 		# logic and updates the visualization accordingly.
 		def update(_: int):
-			controller.step(robot, self)
+			#Kolla alla unika punkter
+			amount_mowed = len(set(self.mowed_points))
+
+			#Kollar om man nått målet, dvs 95% av gräsmattan klippt. Om så är fallet, stoppa roboten och skriv ut att klippningen är klar.
+			if amount_mowed >= goal_points and robot.is_active:
+				robot.is_active = False #Stängs av
+				print("Klippningen är klar!")
+
+			if robot.is_active:
+				controller.step(robot, self)
 
 			# Update the path line with the new mowed coordinates
 			x_values = [point[0] for point in self.mowed_points]
@@ -110,7 +126,6 @@ class LawnWorld:
 			robot_patch.center = robot.position
 
 			return path_line, robot_patch
-
 
 		animation = FuncAnimation(
 			figure,
