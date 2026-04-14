@@ -9,6 +9,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 
+import appState
 import settings
 from settings import ROBOT_SIZE, ROBOT_RADIUS
 
@@ -95,11 +96,13 @@ class LawnWorld:
 		axis.add_patch(robot_patch)
 		axis.add_line(path_line)
 		
+		time_legend = axis.text(0.02,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
 
 		# This function is called by FuncAnimation during each frame.
 		# It updates the robot's position based on the controllers 
 		# logic and updates the visualization accordingly.
 		def update(_: int):
+			appState.time += settings.ANIMATION_INTERVAL_MS/1000
 			controller.step(robot, self)
 
 			# Update the path line with the new mowed coordinates
@@ -108,8 +111,10 @@ class LawnWorld:
 			path_line.set_data(x_values, y_values)
 
 			robot_patch.center = robot.position
+			
+			time_legend.set_text(f"Tid: {appState.time:.1f}")
 
-			return path_line, robot_patch
+			return path_line, robot_patch, time_legend
 
 
 		animation = FuncAnimation(
