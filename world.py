@@ -12,6 +12,9 @@ from matplotlib.patches import Circle, Rectangle
 import settings
 from settings import ROBOT_SIZE, ROBOT_RADIUS
 
+import utilities
+from utilities import getLawnPoints, LawnPointsOption
+
 if TYPE_CHECKING:
 	from controller import Controller
 	from robot import Robot
@@ -43,13 +46,6 @@ class LawnWorld:
 	# position and the mowed path in real-time.
 	def run_simulation(self, robot: "Robot", controller: "Controller") -> None:
 		self.mark_mowed(robot.x, robot.y)
-
-		#Logik för målet 95%
-		width_tot = self.max_x - self.min_x
-		height_tot = self.max_y - self.min_y
-		#Räkna ut hur många punkter det finns på 95% av ytan
-		points_tot = (width_tot * height_tot) / (settings.MOVE_DISTANCE ** 2)
-		goal_points = points_tot * 0.01
 
 		figure, axis = plt.subplots(figsize=settings.FIGURE_SIZE)
 		axis.set_xlim(self.min_x, self.max_x)
@@ -102,6 +98,7 @@ class LawnWorld:
 		axis.add_patch(robot_patch)
 		axis.add_line(path_line)
 		
+		goal_points = getLawnPoints(self.max_x, self.min_x, self.max_y, self.min_y, LawnPointsOption.TESTING)
 
 		# This function is called by FuncAnimation during each frame.
 		# It updates the robot's position based on the controllers 
@@ -114,6 +111,8 @@ class LawnWorld:
 			if amount_mowed >= goal_points and robot.is_active:
 				robot.is_active = False #Stängs av
 				print("Klippningen är klar!")
+				#Stoppa renderingen direkt när roboten stängs av
+				animation.event_source.stop()
 
 			if robot.is_active:
 				controller.step(robot, self)
