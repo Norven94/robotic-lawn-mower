@@ -96,13 +96,13 @@ class LawnWorld:
 		axis.add_patch(robot_patch)
 		axis.add_line(path_line)
 		
-		time_legend = axis.text(0.02,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
+		time_legend = axis.text(0.03,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
 
 		# This function is called by FuncAnimation during each frame.
 		# It updates the robot's position based on the controllers 
 		# logic and updates the visualization accordingly.
 		def update(_: int):
-			appState.time += settings.ANIMATION_INTERVAL_MS/1000
+			appState.time += settings.MOVE_DISTANCE/settings.ROBOT_REAL_SPEED_MPS
 			controller.step(robot, self)
 
 			# Update the path line with the new mowed coordinates
@@ -112,7 +112,7 @@ class LawnWorld:
 
 			robot_patch.center = robot.position
 			
-			time_legend.set_text(f"Tid: {appState.time:.1f}")
+			time_legend.set_text(f"Tid: {appState.time:.1f} s")
 
 			return path_line, robot_patch, time_legend
 
