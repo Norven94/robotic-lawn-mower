@@ -1,15 +1,28 @@
 #How the obstacles work
 #Shape
 from dataclasses import dataclass, field
+from typing import Protocol
 
 from matplotlib.patches import Circle, Rectangle
 
 import settings
 
+# Base obstacle protocol that defines how all obstacles should be structured. 
+# This allows us to easily add new types of obstacles in the future (e.g. circular obstacles) 
+# by just creating a new class that implements this protocol.
+class Obstacle(Protocol):
+    x: float
+    y: float
+    width: float
+    height: float
+    type: str
+    def is_hitting(self, robot_x, robot_y, padding) -> bool:
+        ...
+
 # This is a class to handle all obstacles that should be rendered in the world 
 @dataclass
 class Obstacles:
-    all_obstacles: list = field(default_factory=list, init=False)
+    all_obstacles: list[Obstacle] = field(default_factory=list, init=False)
 
     #List for obstacles
     def __post_init__ (self):
@@ -59,7 +72,7 @@ class RectangleObstacles:
     height: float
     type: str = "rectangle"
 
-    def is_hitting( self, robot_x, robot_y, padding):
+    def is_hitting(self, robot_x, robot_y, padding) -> bool:
         within_x =self.x - padding<= robot_x <= self.x + self.width + padding
         within_y = self.y - padding<= robot_y <= self.y + self.height + padding
         return within_x and within_y
