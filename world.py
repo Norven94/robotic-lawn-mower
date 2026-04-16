@@ -13,6 +13,9 @@ import appState
 import settings
 from settings import ROBOT_SIZE, ROBOT_RADIUS
 
+import utilities
+from utilities import getLawnPoints, LawnPointsOption
+
 if TYPE_CHECKING:
 	from controller import Controller
 	from robot import Robot
@@ -97,13 +100,25 @@ class LawnWorld:
 		axis.add_line(path_line)
 		
 		time_legend = axis.text(0.03,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
+		goal_points = getLawnPoints(self.max_x, self.min_x, self.max_y, self.min_y, LawnPointsOption.TESTING)
 
 		# This function is called by FuncAnimation during each frame.
 		# It updates the robot's position based on the controllers 
 		# logic and updates the visualization accordingly.
 		def update(_: int):
 			appState.time += settings.MOVE_DISTANCE/settings.ROBOT_REAL_SPEED_MPS
-			controller.step(robot, self)
+			#Kolla alla unika punkter
+			amount_mowed = len(set(self.mowed_points))
+
+			#Kollar om man nått målet, dvs 95% av gräsmattan klippt. Om så är fallet, stoppa roboten och skriv ut att klippningen är klar.
+			if amount_mowed >= goal_points and robot.is_active:
+				robot.is_active = False #Stängs av
+				print("Klippningen är klar!")
+				#Stoppa renderingen direkt när roboten stängs av
+				animation.event_source.stop()
+
+			if robot.is_active:
+				controller.step(robot, self)
 
 			# Update the path line with the new mowed coordinates
 			x_values = [point[0] for point in self.mowed_points]
@@ -115,7 +130,6 @@ class LawnWorld:
 			time_legend.set_text(f"Tid: {appState.time:.1f} s")
 
 			return path_line, robot_patch, time_legend
-
 
 		animation = FuncAnimation(
 			figure,
