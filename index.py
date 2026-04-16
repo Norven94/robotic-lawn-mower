@@ -14,7 +14,7 @@ def main() -> None:
 
 	# We can replace this with CLI selection later.
 	print(appState.simulation_option)
-	if appState.simulation_option == SimOption.RANDOM.key:
+	if appState.simulation_option == SimOption.GPS.key:
 		controller = RandomController()
 	elif appState.simulation_option == SimOption.WIRED.key:
 		controller = WireController()
