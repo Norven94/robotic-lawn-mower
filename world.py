@@ -9,11 +9,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 
 import appState
-import settings
-from utilities import sync_linewidth_to_data
-
-import utilities
-from utilities import getLawnPoints, LawnPointsOption
+from utilities import getLawnPoints, sync_linewidth_to_data, LawnPointsOption
 
 import settings 
 from obstacles import rectangleobstacles
@@ -33,24 +29,26 @@ class LawnWorld:
 
 	#List for obstacles
 	def __post_init__ (self):
-		house = rectangleobstacles( settings. OFF_SET_PLOT_X, settings. OFF_SET_PLOT_Y, settings. HOUSE_SIZE )
+		house = rectangleobstacles( settings.OFF_SET_PLOT_X, settings.OFF_SET_PLOT_Y, settings.HOUSE_SIZE )
 		self.obstacles.append(house)
 
 	# Helper function to check if a coordinate is within the lawn 
 	# boundaries, with padding for the robot's size.
 	# Obstacles on lawn
 	def is_inside(self, x: float, y: float, padding: float = 0.0) -> bool:
+		valid_path = True
 		#Check if robot is on lawn
 		on_lawn = (
 			self.min_x + padding <= x <= self.max_x - padding
 			and self.min_y + padding <= y <= self.max_y - padding
 		)
 		if not on_lawn:
-			return False
+			valid_path = False
 		for obstacle in self.obstacles:
 			if obstacle.is_hitting(x, y, padding):
-				return False
-			return True
+				valid_path = False
+			
+		return valid_path
 
 	# Adds a coordinate as mowed, which is used for visualization. 
 	def mark_mowed(self, x: float, y: float) -> None:
@@ -111,7 +109,18 @@ class LawnWorld:
 				linewidth=2,
 				zorder=2, 
 			)
+			obstacle_border = Rectangle(
+				(obstacle.x - settings.ROBOT_SIZE, obstacle.y - settings.ROBOT_SIZE),
+				obstacle.width + settings.ROBOT_SIZE * 2,
+				obstacle.height + settings.ROBOT_SIZE * 2,
+				fill=False,
+				edgecolor=settings.BOUNDARY_COLOR,
+  			    linewidth=2,
+  			    linestyle="--",
+  			    zorder=2,
+			)
 			axis.add_patch(renderd_obstacle)
+			axis.add_patch(obstacle_border)
 
 		# Prepares visual elements to show where the robot has mowed
 		# and where the robot currently is.
