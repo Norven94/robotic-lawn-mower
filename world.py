@@ -9,6 +9,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 
 import appState
+from lawn import Lawn
 from utilities import getLawnPoints, sync_linewidth_to_data, LawnPointsOption
 
 import settings 
@@ -19,11 +20,13 @@ if TYPE_CHECKING:
 	from robot import Robot
 
 @dataclass
-class LawnWorld:
-	min_x: float = settings.LAWN_MIN_X
-	max_x: float = settings.LAWN_MAX_X
-	min_y: float = settings.LAWN_MIN_Y
-	max_y: float = settings.LAWN_MAX_Y
+class World:
+	# min_x: float = settings.LAWN_MIN_X
+	# max_x: float = settings.LAWN_MAX_X
+	# min_y: float = settings.LAWN_MIN_Y
+	# max_y: float = settings.LAWN_MAX_Y
+	lawn = Lawn()
+	
 	mowed_points: list[tuple[float, float]] = field(default_factory=list, init=False)
 	obstacles: list = field(default_factory=list, init=False)
 
@@ -38,12 +41,7 @@ class LawnWorld:
 	def is_inside(self, x: float, y: float, padding: float = 0.0) -> bool:
 		valid_path = True
 		#Check if robot is on lawn
-		on_lawn = (
-			self.min_x + padding <= x <= self.max_x - padding
-			and self.min_y + padding <= y <= self.max_y - padding
-		)
-		if not on_lawn:
-			valid_path = False
+		valid_path = self.lawn.is_hitting(x, y, padding)
 		for obstacle in self.obstacles:
 			if obstacle.is_hitting(x, y, padding):
 				valid_path = False
@@ -64,40 +62,16 @@ class LawnWorld:
 
 		figure, axis = plt.subplots(figsize=settings.FIGURE_SIZE)
 
-		axis.set_xlim(self.min_x, self.max_x)
-		axis.set_ylim(self.min_y, self.max_y)
+		axis.set_xlim(self.lawn.min_x, self.lawn.max_x)
+		axis.set_ylim(self.lawn.min_y, self.lawn.max_y)
 		axis.set_aspect("equal", adjustable="box")
 		axis.set_title("Lets add robot name from CLI here")
 		axis.set_facecolor(settings.LAWN_COLOR)
 
-		# Outer rectangle: full lawn boundary.
-		lawn_boundary = Rectangle(
-			(self.min_x, self.min_y),
-			self.max_x - self.min_x,
-			self.max_y - self.min_y,
-			fill=False,
-			edgecolor="black",
-			linewidth=2,
-			zorder=2,
-		)
+		lawn_boundary, allowed_boundary = self.lawn.getPatches()
 		axis.add_patch(lawn_boundary)
-
-		# Inner rectangle: where robot center is allowed to move.
-		allowed_min_x = self.min_x + settings.ROBOT_SIZE
-		allowed_max_x = self.max_x - settings.ROBOT_SIZE
-		allowed_min_y = self.min_y + settings.ROBOT_SIZE
-		allowed_max_y = self.max_y - settings.ROBOT_SIZE
-		allowed_boundary = Rectangle(
-			(allowed_min_x, allowed_min_y),
-			allowed_max_x - allowed_min_x,
-			allowed_max_y - allowed_min_y,
-			fill=False,
-			edgecolor=settings.BOUNDARY_COLOR,
-			linewidth=2,
-			linestyle="--",
-			zorder=2,
-		)
 		axis.add_patch(allowed_boundary)
+
 		for obstacle in self.obstacles:
 			renderd_obstacle = Rectangle(
 				(obstacle.x, obstacle.y),
@@ -147,7 +121,7 @@ class LawnWorld:
 		)
 		
 		time_legend = axis.text(0.03,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
-		goal_points = getLawnPoints(self.max_x, self.min_x, self.max_y, self.min_y, LawnPointsOption.TESTING)
+		goal_points = getLawnPoints(self.lawn.max_x, self.lawn.min_x, self.lawn.max_y, self.lawn.min_y, LawnPointsOption.TESTING)
 
 		# This function is called by FuncAnimation during each frame.
 		# It updates the robot's position based on the controllers 

@@ -2,12 +2,12 @@ from appState import AppState
 from cli import CLI, SimOption
 from controller import RandomController, WireController
 from robot import Robot
-from world import LawnWorld
+from world import World
 
 
 def main() -> None:
 	appState = AppState()
-	world = LawnWorld()
+	world = World()
 	robot = Robot()
 	cli = CLI()
 	appState.simulation_option = cli.startApplication()

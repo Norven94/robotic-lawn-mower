@@ -10,4 +10,3 @@ class rectangleobstacles:
         within_x =self.x - padding<= robot_x <= self.x + self.width + padding
         within_y = self.y - padding<= robot_y <= self.y + self.height + padding
         return within_x and within_y
-
