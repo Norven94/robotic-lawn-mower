@@ -7,8 +7,8 @@ from settings import DEFAULT_ROBOT_NAME
 
 #def alternativen i en Enum
 class SimOption(Enum):
-    RANDOM = ("random", "Slumpmässig rörelse")
-    WIRED = ("wired", "Utsatt slinga")
+    GPS = ("gps", "gps med specifikt rörelsemönster")
+    WIRED = ("wired", "Utsatt slinga (slumpmässig rörelse)")
 
     def __init__(self, key, label):
         self.key = key
@@ -49,7 +49,7 @@ class CLI():
             answer = next(opt for opt in SimOption if opt.label == selected_label)
             simulation_option = answer.key
 
-            if answer == SimOption.RANDOM:
+            if answer == SimOption.GPS:
                 print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
             elif answer == SimOption.WIRED:
                 print("Du har valt: " + answer.label) #skriver ut det som står i parantesen

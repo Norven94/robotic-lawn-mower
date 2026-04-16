@@ -4,35 +4,35 @@ from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
 	from robot import Robot
-	from world import LawnWorld
+	from world import World
 
 # This is the base type for the controllers, which controller to use
 # can be selected in the CLI and passed to the LawnWorld's 
 # run_simulation function. This decides how the robot should work and 
 # move during the simulation. 
 class Controller(Protocol):
-	def step(self, robot: "Robot", world: "LawnWorld") -> None:
+	def step(self, robot: "Robot", world: "World") -> None:
 		...
 
-class RandomController:
+class WiredController:
 	def next_position(self, robot: "Robot", distance: float) -> tuple[float, float]:
 		angle = radians(robot.heading)
 		next_x = robot.x + cos(angle) * distance
 		next_y = robot.y + sin(angle) * distance
 		return next_x, next_y
 
-	def step(self, robot: "Robot", world: "LawnWorld") -> None:
+	def step(self, robot: "Robot", world: "World") -> None:
 		next_x, next_y = self.next_position(robot, robot.move_distance)
 		if not robot.move_forward(world, next_x, next_y):
 			robot.heading = random.randint(0, 360)
 			return
 
-class WireController:
+class GPSController:
 	def __init__(self) -> None:
 		self.phase = "seek_down"
 		self.horizontal_direction = 1.0
 
-	def step(self, robot: "Robot", world: "LawnWorld") -> None:
+	def step(self, robot: "Robot", world: "World") -> None:
 		if not robot.is_active:
 			return
 
