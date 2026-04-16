@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from math import cos, radians, sin
 from typing import TYPE_CHECKING
 
 import settings
@@ -14,7 +13,7 @@ class Robot:
 	y: float = settings.ROBOT_START_Y
 	heading: float = settings.ROBOT_START_HEADING
 	move_distance: float = settings.MOVE_DISTANCE
-	radius: float = settings.ROBOT_RADIUS
+	diameter: float = settings.ROBOT_DIAMETER
 	# We can use this to turn off the robot once we know when it's 
     # done with the entire lawn.
 	is_active: bool = field(default=True, init=False)
@@ -23,30 +22,18 @@ class Robot:
 	def position(self) -> tuple[float, float]:
 		return (self.x, self.y)
 
-	def _next_position(self, distance: float) -> tuple[float, float]:
-		angle = radians(self.heading)
-		next_x = self.x + cos(angle) * distance
-		next_y = self.y + sin(angle) * distance
-		return next_x, next_y
-
     # Function to move the robot forward, returns False if it can't 
     # move to the next position (e.g. due to boundary), True otherwise
     # This allows the autonomous_step function to decide when to turn 
     # vs move. It also lets the lawn world know that the robot has mowed
     # at the new position, which is important for the visualization. 
-	def move_forward(self, world: "LawnWorld") -> bool:
+	def move_forward(self, world: "LawnWorld", next_x: float, next_y: float) -> bool:
 		if not self.is_active:
 			return False
-
-		next_x, next_y = self._next_position(self.move_distance)
-		if not world.is_inside(next_x, next_y, padding=self.radius):
+		if not world.is_inside(next_x, next_y, padding=settings.ROBOT_SIZE):
 			return False
 
 		self.x = next_x
 		self.y = next_y
 		world.mark_mowed(self.x, self.y)
 		return True
-
-	def detect_boundary(self, world: "LawnWorld") -> bool:
-		next_x, next_y = self._next_position(self.move_distance)
-		return not world.is_inside(next_x, next_y, padding=self.radius)

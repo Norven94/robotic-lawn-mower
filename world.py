@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from math import cos, radians, sin
 from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
@@ -11,7 +10,7 @@ from matplotlib.patches import Circle, Rectangle
 
 import appState
 import settings
-from settings import ROBOT_SIZE, ROBOT_RADIUS
+from utilities import sync_linewidth_to_data
 
 import utilities
 from utilities import getLawnPoints, LawnPointsOption
@@ -29,7 +28,7 @@ class LawnWorld:
 	mowed_points: list[tuple[float, float]] = field(default_factory=list, init=False)
 
 	# Helper function to check if a coordinate is within the lawn 
-	# boundaries, with padding for the robot's radius
+	# boundaries, with padding for the robot's size.
 	def is_inside(self, x: float, y: float, padding: float = 0.0) -> bool:
 		return (
 			self.min_x + padding <= x <= self.max_x - padding
@@ -49,6 +48,7 @@ class LawnWorld:
 		self.mark_mowed(robot.x, robot.y)
 
 		figure, axis = plt.subplots(figsize=settings.FIGURE_SIZE)
+
 		axis.set_xlim(self.min_x, self.max_x)
 		axis.set_ylim(self.min_y, self.max_y)
 		axis.set_aspect("equal", adjustable="box")
@@ -68,10 +68,10 @@ class LawnWorld:
 		axis.add_patch(lawn_boundary)
 
 		# Inner rectangle: where robot center is allowed to move.
-		allowed_min_x = self.min_x + robot.radius
-		allowed_max_x = self.max_x - robot.radius
-		allowed_min_y = self.min_y + robot.radius
-		allowed_max_y = self.max_y - robot.radius
+		allowed_min_x = self.min_x + settings.ROBOT_SIZE
+		allowed_max_x = self.max_x - settings.ROBOT_SIZE
+		allowed_min_y = self.min_y + settings.ROBOT_SIZE
+		allowed_max_y = self.max_y - settings.ROBOT_SIZE
 		allowed_boundary = Rectangle(
 			(allowed_min_x, allowed_min_y),
 			allowed_max_x - allowed_min_x,
@@ -90,14 +90,23 @@ class LawnWorld:
 			[],
 			[],
 			color=settings.PATH_COLOR,
-			linewidth=6,
+			linewidth=0,
 			solid_capstyle="round",
 			solid_joinstyle="round",
 			zorder=1,
 		)
-		robot_patch = Circle((robot.x, robot.y), radius=robot.radius, color=settings.ROBOT_COLOR, zorder=3)
+		robot_patch = Circle((robot.x, robot.y), radius=settings.ROBOT_SIZE, color=settings.ROBOT_COLOR, zorder=3)
 		axis.add_patch(robot_patch)
 		axis.add_line(path_line)
+
+		# The line width is in pixles and needs to be converted to data units so it matches the robot's blade diameter. 
+		# We also need to update it on every redraw in case the user resizes the window.
+		blade_diameter = robot.diameter
+		sync_linewidth_to_data(path_line, figure, axis, blade_diameter)
+		figure.canvas.mpl_connect(
+			"draw_event",
+			lambda _event: sync_linewidth_to_data(path_line, figure, axis, blade_diameter),
+		)
 		
 		time_legend = axis.text(0.03,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
 		goal_points = getLawnPoints(self.max_x, self.min_x, self.max_y, self.min_y, LawnPointsOption.TESTING)

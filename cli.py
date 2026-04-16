@@ -27,7 +27,7 @@ class CLI():
         )        
     ]
 
-    def startApplication (self, simulation_option: str | None) -> None:
+    def startApplication(self) -> str:
         #fråga användaren efetr namn på roboten
         namn_input = input("Vad ska robotgräsklipparen heta? ")
         #om användaren inte skriver något, sätt namnet till "Per" annars, sätt namnet till det användaren skrev in.
@@ -40,7 +40,10 @@ class CLI():
 
         while True:
             #hämta svaret (labeln) från användaren 
-            selected_label = inquirer.prompt(self.questions)["choice"] #hämta det valda alternativet från svaret
+            answers = inquirer.prompt(self.questions)
+            if not answers:
+                continue
+            selected_label = answers["choice"] #hämta det valda alternativet från svaret
 
             #Hitta vilket Enum-objek som matchar valda labeln
             answer = next(opt for opt in SimOption if opt.label == selected_label)
@@ -55,3 +58,4 @@ class CLI():
 
         #skriver ut en välkomsthälsning varje gång loopen börjar om
         print("Välkommen till robotgräsklipparen!")
+        return simulation_option

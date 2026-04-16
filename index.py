@@ -10,9 +10,10 @@ def main() -> None:
 	world = LawnWorld()
 	robot = Robot()
 	cli = CLI()
-	cli.startApplication(appState.simulation_option)
+	appState.simulation_option = cli.startApplication()
 
 	# We can replace this with CLI selection later.
+	print(appState.simulation_option)
 	if appState.simulation_option == SimOption.RANDOM.key:
 		controller = RandomController()
 	elif appState.simulation_option == SimOption.WIRED.key:
