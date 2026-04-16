@@ -12,14 +12,13 @@ def main() -> None:
 	cli = CLI()
 	appState.simulation_option = cli.startApplication()
 
-	# We can replace this with CLI selection later.
-	print(appState.simulation_option)
+	# Sets controller based on CLI input, defaults to WiredController if no valid option is selected.
 	if appState.simulation_option == SimOption.GPS.key:
 		controller = GPSController()
 	elif appState.simulation_option == SimOption.WIRED.key:
 		controller = WiredController()
 	else:
-		controller = WiredController()  # Default to WiredController if no valid option is selected
+		controller = WiredController()
 
 	world.run_simulation(robot, controller)
 
