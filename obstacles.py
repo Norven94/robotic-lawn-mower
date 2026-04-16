@@ -45,7 +45,7 @@ class Obstacles:
                 patches.append(renderd_obstacle)
                 patches.append(obstacle_border)
             if obstacle.type == "circle":
-                # Add code here to handle circular obstacles if we want to add them in the future.
+                # Add code here to handle rendering of circular elements.
                 pass
 
         return patches
