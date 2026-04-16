@@ -6,7 +6,7 @@ class LawnPointsOption(Enum):
     SEVENTY = 0.7
     NINETY = 0.9
     NINETYFIVE = 0.95
-    TESTING = 0.01
+    TESTING = 0.05
 
 def getLawnPoints(max_x, min_x, max_y, min_y, option: LawnPointsOption) -> float:
     width_tot = max_x - min_x

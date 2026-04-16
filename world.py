@@ -9,11 +9,10 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 
 import appState
-import settings
-from utilities import sync_linewidth_to_data
+from utilities import getLawnPoints, sync_linewidth_to_data, LawnPointsOption
 
-import utilities
-from utilities import getLawnPoints, LawnPointsOption
+import settings 
+from obstacles import rectangleobstacles
 
 if TYPE_CHECKING:
 	from controller import Controller
@@ -26,14 +25,30 @@ class LawnWorld:
 	min_y: float = settings.LAWN_MIN_Y
 	max_y: float = settings.LAWN_MAX_Y
 	mowed_points: list[tuple[float, float]] = field(default_factory=list, init=False)
+	obstacles: list = field(default_factory=list, init=False)
+
+	#List for obstacles
+	def __post_init__ (self):
+		house = rectangleobstacles( settings.OFF_SET_PLOT_X, settings.OFF_SET_PLOT_Y, settings.HOUSE_SIZE )
+		self.obstacles.append(house)
 
 	# Helper function to check if a coordinate is within the lawn 
 	# boundaries, with padding for the robot's size.
+	# Obstacles on lawn
 	def is_inside(self, x: float, y: float, padding: float = 0.0) -> bool:
-		return (
+		valid_path = True
+		#Check if robot is on lawn
+		on_lawn = (
 			self.min_x + padding <= x <= self.max_x - padding
 			and self.min_y + padding <= y <= self.max_y - padding
 		)
+		if not on_lawn:
+			valid_path = False
+		for obstacle in self.obstacles:
+			if obstacle.is_hitting(x, y, padding):
+				valid_path = False
+			
+		return valid_path
 
 	# Adds a coordinate as mowed, which is used for visualization. 
 	def mark_mowed(self, x: float, y: float) -> None:
@@ -83,6 +98,29 @@ class LawnWorld:
 			zorder=2,
 		)
 		axis.add_patch(allowed_boundary)
+		for obstacle in self.obstacles:
+			renderd_obstacle = Rectangle(
+				(obstacle.x, obstacle.y),
+				obstacle.width,
+				obstacle.height,
+				fill=True,
+				facecolor=settings.HOUSE_COLOR,
+				edgecolor= "black",
+				linewidth=2,
+				zorder=2, 
+			)
+			obstacle_border = Rectangle(
+				(obstacle.x - settings.ROBOT_SIZE, obstacle.y - settings.ROBOT_SIZE),
+				obstacle.width + settings.ROBOT_SIZE * 2,
+				obstacle.height + settings.ROBOT_SIZE * 2,
+				fill=False,
+				edgecolor=settings.BOUNDARY_COLOR,
+  			    linewidth=2,
+  			    linestyle="--",
+  			    zorder=2,
+			)
+			axis.add_patch(renderd_obstacle)
+			axis.add_patch(obstacle_border)
 
 		# Prepares visual elements to show where the robot has mowed
 		# and where the robot currently is.
