@@ -1,6 +1,6 @@
 from appState import AppState
 from cli import CLI, SimOption
-from controller import RandomController, WireController
+from controller import WiredController, GPSController
 from robot import Robot
 from world import World
 
@@ -15,11 +15,11 @@ def main() -> None:
 	# We can replace this with CLI selection later.
 	print(appState.simulation_option)
 	if appState.simulation_option == SimOption.GPS.key:
-		controller = RandomController()
+		controller = GPSController()
 	elif appState.simulation_option == SimOption.WIRED.key:
-		controller = WireController()
+		controller = WiredController()
 	else:
-		controller = RandomController()  # Default to RandomController if no valid option is selected
+		controller = WiredController()  # Default to WiredController if no valid option is selected
 
 	world.run_simulation(robot, controller)
 

@@ -14,7 +14,7 @@ class Controller(Protocol):
 	def step(self, robot: "Robot", world: "World") -> None:
 		...
 
-class RandomController:
+class WiredController:
 	def next_position(self, robot: "Robot", distance: float) -> tuple[float, float]:
 		angle = radians(robot.heading)
 		next_x = robot.x + cos(angle) * distance
@@ -27,7 +27,7 @@ class RandomController:
 			robot.heading = random.randint(0, 360)
 			return
 
-class WireController:
+class GPSController:
 	def __init__(self) -> None:
 		self.phase = "seek_down"
 		self.horizontal_direction = 1.0
