@@ -27,7 +27,11 @@ class Obstacles:
     #List for obstacles
     def __post_init__ (self):
         house = RectangleObstacles( settings.OFF_SET_PLOT_X, settings.OFF_SET_PLOT_Y, settings.HOUSE_SIZE, settings.HOUSE_SIZE )
+        playhouse = RectangleObstacles( 5, 15, 3, 2 )
+        garage = RectangleObstacles( 12, 0, 4, 2 )
         self.all_obstacles.append(house)
+        self.all_obstacles.append(playhouse)
+        self.all_obstacles.append(garage)
 
     # Helper function to setup all obstacle elements for the world to render
     def getPatches(self) -> list[Rectangle | Circle]:
