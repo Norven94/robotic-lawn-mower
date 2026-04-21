@@ -7,7 +7,7 @@ LAWN_MAX_Y = 30.0
 # If we change this to 1000ms we get 1 step per second which is better to use for correct statistics,
 # but for development we want it to be faster so we can see the results quicker. We need to rethink this 
 # when we implement statistics capturing.
-ANIMATION_INTERVAL_MS = 80 
+ANIMATION_INTERVAL_MS = 80
 # Only effects the window size displayed on the screen, not 
 # the actual lawn dimensions
 FIGURE_SIZE = (10, 10)
@@ -21,6 +21,7 @@ ROBOT_SIZE = ROBOT_DIAMETER + ROBOT_BODY_OFFSET
 ROBOT_START_HEADING = 0.0
 MOVE_DISTANCE = ROBOT_DIAMETER
 ROBOT_REAL_SPEED_MPS = 0.42
+ROBOT_POWER = 40
 
 #Obstacle settings
 HOUSE_SIZE = 10.0

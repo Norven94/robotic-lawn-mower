@@ -69,6 +69,13 @@ class World:
 		self.mark_mowed(robot.x, robot.y)
 		self.create_garden(axis)
 
+		milestones_track = [LawnPointsOption.TESTING,LawnPointsOption.FIFTY,LawnPointsOption.SEVENTY,LawnPointsOption.NINETY,LawnPointsOption.NINETYFIVE]
+		milestone_goals= []
+		#Loopar igenom varje milstolpe för att veta hur många klippta punkter krävs för 50,70,90,95
+		for m in milestones_track:
+			points = getLawnPoints(self.lawn.max_x, self.lawn.min_x, self.lawn.max_y, self.lawn.min_y,m)
+			milestone_goals.append(points)
+
 		time_legend = axis.text(0.03,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
 		goal_points = getLawnPoints(self.lawn.max_x, self.lawn.min_x, self.lawn.max_y, self.lawn.min_y, LawnPointsOption.TESTING)
 
@@ -104,6 +111,37 @@ class World:
 			#Kolla alla unika punkter
 			amount_mowed = len(set(self.mowed_points))
 
+			#uppdaterar totala sträcka
+			appState.distance += settings.MOVE_DISTANCE * settings.ROBOT_REAL_SPEED_MPS
+
+            #Kollar antalet krockar
+			is_hitting_something= not self.is_inside(robot.x, robot.y, padding=settings.ROBOT_DIAMETER/2)
+			
+			if is_hitting_something:
+				if not appState.is_colliding:
+					appState.collisions += 1
+					appState.is_colliding = True 
+			else:
+				appState.is_colliding = False
+
+			
+			#Kollar hur mycket som är klippt
+			amount_mowed=len(set(self.mowed_points))
+
+			for i in range(len(milestones_track)):
+				m = milestones_track[i] 
+				goal_points = milestone_goals[i] 
+
+				if amount_mowed>= goal_points and m not in appState.logged_milestones:
+
+					velocity = settings.ROBOT_REAL_SPEED_MPS
+					energy = (settings.ROBOT_POWER/velocity) * appState.distance if velocity > 0 else 0 
+
+					data = {"percentage_done": f"{int(m.value * 100)}%", "total_length": round(appState.distance, 2),"total_collision": appState.collisions, "total_energy":round(energy,2),"total_time":round(appState.time,2)}
+
+					appState.results.append(data)
+					appState.logged_milestones.add(m)
+
 			#Kollar om man nått målet, dvs 95% av gräsmattan klippt. Om så är fallet, stoppa roboten och skriv ut att klippningen är klar.
 			if amount_mowed >= goal_points and robot.is_active:
 				robot.is_active = False #Stängs av
@@ -136,3 +174,5 @@ class World:
 		)
 
 		plt.show()
+		print("Här är all statistik")
+		print(appState.results)
