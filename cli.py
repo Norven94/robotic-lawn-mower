@@ -3,12 +3,15 @@ from dataclasses import dataclass
 import inquirer
 from enum import Enum
 
+import appState
 from settings import DEFAULT_ROBOT_NAME
 
 #def alternativen i en Enum
 class SimOption(Enum):
-    GPS = ("gps", "gps med specifikt rörelsemönster")
-    WIRED = ("wired", "Utsatt slinga (slumpmässig rörelse)")
+    GPS_NO = ("gps_no", "GPS med specifikt rörelsemönster (utan hinder)")
+    GPS_YES = ("gps_yes", "GPS med specifikt rörelsemönster (med hinder)")
+    WIRED_NO = ("wired_no", "Utsatt slinga med slumpmässig rörelse (utan hinder)")
+    WIRED_YES = ("wired_yes", "Utsatt slinga med slumpmässig rörelse (med hinder)")
 
     def __init__(self, key, label):
         self.key = key
@@ -27,7 +30,7 @@ class CLI():
         )        
     ]
 
-    def startApplication(self) -> str:
+    def startApplication(self, appState) -> str:
         #fråga användaren efetr namn på roboten
         namn_input = input("Vad ska robotgräsklipparen heta? ")
         #om användaren inte skriver något, sätt namnet till "Per" annars, sätt namnet till det användaren skrev in.
@@ -35,6 +38,8 @@ class CLI():
             robot_namn = DEFAULT_ROBOT_NAME
         else:
             robot_namn = namn_input
+
+        appState.robot_name = robot_namn #spara robotnamnet i appState så att det kan användas i hela programmet
 
         print("Robotgräsklipparen heter " + robot_namn + "!")
 
@@ -46,16 +51,15 @@ class CLI():
             selected_label = answers["choice"] #hämta det valda alternativet från svaret
 
             #Hitta vilket Enum-objek som matchar valda labeln
-            answer = next(opt for opt in SimOption if opt.label == selected_label)
-            simulation_option = answer.key
-
-            if answer == SimOption.GPS:
-                print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
-            elif answer == SimOption.WIRED:
-                print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
+            selected_option = next(opt for opt in SimOption if opt.label == selected_label)
+            
+            if "gps" in selected_option.key:
+                print("Du har valt: " + selected_option.label) #skriver ut det som står i parantesen
+            else: 
+                print("Du har valt: " + selected_option.label) #skriver ut det som står i parantesen
 
             break #bryter loopen och avslutar programmet efter valet
 
         #skriver ut en välkomsthälsning varje gång loopen börjar om
         print("Välkommen till robotgräsklipparen!")
-        return simulation_option
+        return selected_option.key #returnerar nyckeln för det valda alternativet (t.ex. "gps_no")

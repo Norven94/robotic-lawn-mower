@@ -11,6 +11,7 @@ from matplotlib.patches import Circle, Rectangle
 
 import appState
 from lawn import Lawn
+import robot
 from utilities import getLawnPoints, sync_linewidth_to_data, LawnPointsOption
 
 import settings 
@@ -35,6 +36,7 @@ class World:
 		for obstacle in self.obstacles.all_obstacles:
 			if obstacle.is_hitting(x, y, padding):
 				valid_path = False
+				break
 			
 		return valid_path
 
@@ -46,28 +48,29 @@ class World:
 
 	# This function sets up all static elements in the simulation like the lawn boundaries and obstacles. 
 	# It is called once at the beginning of the simulation.
-	def create_garden(self, axis: Axes):
+	def create_garden(self, axis: Axes, appState):
 		axis.set_xlim(self.lawn.min_x, self.lawn.max_x)
 		axis.set_ylim(self.lawn.min_y, self.lawn.max_y)
 		axis.set_aspect("equal", adjustable="box")
-		axis.set_title("Lets add robot name from CLI here")
+		axis.set_title("Simulering av robotgräsklipparen: " + appState.robot_name)
 		axis.set_facecolor(settings.LAWN_COLOR)
 
 		lawn_boundary, allowed_boundary = self.lawn.getPatches()
 		axis.add_patch(lawn_boundary)
 		axis.add_patch(allowed_boundary)
 
-		obstacle_boundaries = self.obstacles.getPatches()
-		for obstacle in obstacle_boundaries:
-			axis.add_patch(obstacle)
+		if appState.has_obstacles:
+			obstacle_boundaries = self.obstacles.getPatches()
+			for obstacle in obstacle_boundaries:
+				axis.add_patch(obstacle)
 
 	# Main simulation loop, which also handles visualization using 
 	# Matplotlib. It utilizes FuncAnimation to update the robot's 
 	# position and the mowed path in real-time.
-	def run_simulation(self, robot: "Robot", controller: "Controller") -> None:
+	def run_simulation(self, robot: "Robot", controller: "Controller", appState) -> None:
 		figure, axis = plt.subplots(figsize=settings.FIGURE_SIZE)
 		self.mark_mowed(robot.x, robot.y)
-		self.create_garden(axis)
+		self.create_garden(axis, appState)
 
 		time_legend = axis.text(0.03,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
 		goal_points = getLawnPoints(self.lawn.max_x, self.lawn.min_x, self.lawn.max_y, self.lawn.min_y, LawnPointsOption.TESTING)
