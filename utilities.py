@@ -1,5 +1,6 @@
 from enum import Enum
 import settings
+import appState
 
 class LawnPointsOption(Enum):
     FIFTY = 0.5
@@ -29,3 +30,15 @@ def data_height_to_points(figure, axis, data_height: float) -> float:
 def sync_linewidth_to_data(path_line, figure, axis, data_height: float) -> None:
 	# Set a line's linewidth so it matches a distance in world/data units. 
 	path_line.set_linewidth(data_height_to_points(figure, axis, data_height))
+
+def get_milestone_goals(lawn, milestones_track: list[LawnPointsOption]) -> list[float]:
+    goals = []
+    for m in milestones_track:
+          points = getLawnPoints(lawn.max_x,lawn.min_x,lawn.max_y,lawn.min_y,m)
+          goals.append(points)
+    return goals
+
+def log_milestone_result(m, energy:float):
+    data = {"percentage_done":f"{int(m.value * 100)}%", "total length": round(appState.distance,2), "total collision": appState.collisions, "total energy": round(energy,2),"total_time":round(appState.time,2)}
+    appState.results.append(data)
+    appState.logged_milestones.add(m)
