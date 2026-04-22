@@ -11,7 +11,6 @@ from matplotlib.patches import Circle, Rectangle
 
 import appState
 from lawn import Lawn
-import robot
 from utilities import getLawnPoints, sync_linewidth_to_data, LawnPointsOption
 
 import settings 
@@ -29,14 +28,16 @@ class World:
 
 	# Helper function to check if a coordinate is within the lawn 
 	# boundaries, with padding for the robot's size. It also checks if the coordinate is colliding with any obstacles.
-	def is_inside(self, x: float, y: float, padding: float = 0.0) -> bool:
+	def is_inside(self, x: float, y: float, appState, padding: float = 0.0) -> bool:
 		valid_path = True
 		#Check if robot is on lawn
 		valid_path = self.lawn.is_hitting(x, y, padding)
-		for obstacle in self.obstacles.all_obstacles:
-			if obstacle.is_hitting(x, y, padding):
-				valid_path = False
-				break
+
+		if appState.has_obstacles:
+			for obstacle in self.obstacles.all_obstacles:
+				if obstacle.is_hitting(x, y, padding):
+					valid_path = False
+					break
 			
 		return valid_path
 
@@ -67,7 +68,7 @@ class World:
 	# Main simulation loop, which also handles visualization using 
 	# Matplotlib. It utilizes FuncAnimation to update the robot's 
 	# position and the mowed path in real-time.
-	def run_simulation(self, robot: "Robot", controller: "Controller", appState) -> None:
+	def run_simulation(self, robot: "Robot", controller: "Controller", appState: "AppState") -> None:
 		figure, axis = plt.subplots(figsize=settings.FIGURE_SIZE)
 		self.mark_mowed(robot.x, robot.y)
 		self.create_garden(axis, appState)
@@ -115,7 +116,7 @@ class World:
 				animation.event_source.stop()
 
 			if robot.is_active:
-				controller.step(robot, self)
+				controller.step(robot, self, appState)
 
 			# Update the path line with the new mowed coordinates
 			x_values = [point[0] for point in self.mowed_points]
