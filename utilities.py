@@ -5,8 +5,8 @@ from appState import AppState
 
 class LawnPointsOption(Enum):
     FIFTY = 0.5
-    SEVENTY = 0.07
-    NINETY = 0.09
+    SEVENTY = 0.7
+    NINETY = 0.9
     NINETYFIVE = 0.95
     TESTING = 0.05
 
