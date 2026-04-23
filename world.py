@@ -9,7 +9,6 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 
-import appState
 from lawn import Lawn
 from utilities import getLawnPoints, sync_linewidth_to_data, LawnPointsOption
 
@@ -19,9 +18,11 @@ from obstacles import Obstacles
 if TYPE_CHECKING:
 	from controller import Controller
 	from robot import Robot
+	from appState import AppState
 
 @dataclass
 class World:
+	appState: "AppState"
 	lawn = Lawn()
 	obstacles = Obstacles()
 	mowed_points: list[tuple[float, float]] = field(default_factory=list, init=False)
@@ -32,9 +33,12 @@ class World:
 		valid_path = True
 		#Check if robot is on lawn
 		valid_path = self.lawn.is_hitting(x, y, padding)
-		for obstacle in self.obstacles.all_obstacles:
-			if obstacle.is_hitting(x, y, padding):
-				valid_path = False
+
+		if self.appState.has_obstacles:
+			for obstacle in self.obstacles.all_obstacles:
+				if obstacle.is_hitting(x, y, padding):
+					valid_path = False
+					break
 			
 		return valid_path
 
@@ -50,16 +54,17 @@ class World:
 		axis.set_xlim(self.lawn.min_x, self.lawn.max_x)
 		axis.set_ylim(self.lawn.min_y, self.lawn.max_y)
 		axis.set_aspect("equal", adjustable="box")
-		axis.set_title("Lets add robot name from CLI here")
+		axis.set_title("Simulering av robotgräsklipparen: " + self.appState.robot_name)
 		axis.set_facecolor(settings.LAWN_COLOR)
 
 		lawn_boundary, allowed_boundary = self.lawn.getPatches()
 		axis.add_patch(lawn_boundary)
 		axis.add_patch(allowed_boundary)
 
-		obstacle_boundaries = self.obstacles.getPatches()
-		for obstacle in obstacle_boundaries:
-			axis.add_patch(obstacle)
+		if self.appState.has_obstacles:
+			obstacle_boundaries = self.obstacles.getPatches()
+			for obstacle in obstacle_boundaries:
+				axis.add_patch(obstacle)
 
 	# Main simulation loop, which also handles visualization using 
 	# Matplotlib. It utilizes FuncAnimation to update the robot's 
@@ -69,7 +74,7 @@ class World:
 		self.mark_mowed(robot.x, robot.y)
 		self.create_garden(axis)
 
-		time_legend = axis.text(0.03,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
+		time_legend = axis.text(0.03,0.95, f"Tid:{self.appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
 		goal_points = getLawnPoints(self.lawn.max_x, self.lawn.min_x, self.lawn.max_y, self.lawn.min_y, LawnPointsOption.TESTING)
 
 		# Prepares visual elements to show where the robot has mowed
@@ -100,7 +105,7 @@ class World:
 		# It updates the robot's position based on the controllers 
 		# logic and updates the visualization accordingly.
 		def update(_: int):
-			appState.time += settings.MOVE_DISTANCE/settings.ROBOT_REAL_SPEED_MPS
+			self.appState.time += settings.MOVE_DISTANCE/settings.ROBOT_REAL_SPEED_MPS
 			#Kolla alla unika punkter
 			amount_mowed = len(set(self.mowed_points))
 
@@ -121,7 +126,7 @@ class World:
 
 			robot_patch.center = robot.position
 			
-			time_legend.set_text(f"Tid: {appState.time:.1f} s")
+			time_legend.set_text(f"Tid: {self.appState.time:.1f} s")
 
 			return path_line, robot_patch, time_legend
 

@@ -4,22 +4,25 @@ from controller import WiredController, GPSController
 from robot import Robot
 from world import World
 
-
 def main() -> None:
 	appState = AppState()
-	world = World()
+	world = World(appState)
 	robot = Robot()
 	cli = CLI()
-	appState.simulation_option = cli.startApplication()
+
+	cli.startApplication(appState)
 
 	# Sets controller based on CLI input, defaults to WiredController if no valid option is selected.
 	if appState.simulation_option == SimOption.GPS.key:
 		controller = GPSController()
-	elif appState.simulation_option == SimOption.WIRED.key:
-		controller = WiredController()
+		print("Startar " + SimOption.GPS.label)
 	else:
-		controller = WiredController()
+		controller = WiredController() 
+		print("Startar " + SimOption.WIRED.label)
 
+	obstacle_status = "Ja" if appState.has_obstacles else "Nej"
+	print("Hinder aktiverade: " + obstacle_status)
+	
 	world.run_simulation(robot, controller)
 
 

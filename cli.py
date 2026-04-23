@@ -7,27 +7,41 @@ from settings import DEFAULT_ROBOT_NAME
 
 #def alternativen i en Enum
 class SimOption(Enum):
-    GPS = ("gps", "gps med specifikt rörelsemönster")
-    WIRED = ("wired", "Utsatt slinga (slumpmässig rörelse)")
+    GPS = ("gps", "GPS med specifikt rörelsemönster")
+    WIRED = ("wired", "Utsatt slinga med slumpmässig rörelse")
 
     def __init__(self, key, label):
         self.key = key
         self.label = label
 
+class ObstacleOption(Enum):
+    WITH_OBSTACLES = ("with_obstacles", "Med hinder")
+    WITHOUT_OBSTACLES = ("without_obstacles", "Utan hinder")
+
+    def __init__(self, active, label):
+        self.active = active
+        self.label = label
+
 @dataclass
 class CLI(): 
     # Skapa listan med labels för inquirer (de som kommer visas för användaren)
-    choices = [option.label for option in SimOption]
+    sim_choices = [option.label for option in SimOption]
+    obstacle_choices = [option.label for option in ObstacleOption]
         
     questions = [
         inquirer.List(
-            "choice", #namnet på variablen där svaret sparas temporärt
+            "sim_choice", #namnet på variablen där svaret sparas temporärt
             message = "Välj körläge", #text som visas för användare
-            choices = choices, #de alternativ användaren kan välja mellan
-        )        
+            choices = sim_choices, #de alternativ användaren kan välja mellan
+        ),
+        inquirer.List(
+            "obstacle_choice", #namnet på variablen där svaret sparas temporärt
+            message = "Välj hinderalternativ", #text som visas för användare
+            choices = obstacle_choices, #de alternativ användaren kan välja mellan
+        )
     ]
 
-    def startApplication(self) -> str:
+    def startApplication(self, appState):
         #fråga användaren efetr namn på roboten
         namn_input = input("Vad ska robotgräsklipparen heta? ")
         #om användaren inte skriver något, sätt namnet till "Per" annars, sätt namnet till det användaren skrev in.
@@ -35,27 +49,22 @@ class CLI():
             robot_namn = DEFAULT_ROBOT_NAME
         else:
             robot_namn = namn_input
-
+        appState.robot_name = robot_namn #spara namnet i appState så att det kan användas i resten av programmet
         print("Robotgräsklipparen heter " + robot_namn + "!")
 
-        while True:
-            #hämta svaret (labeln) från användaren 
-            answers = inquirer.prompt(self.questions)
-            if not answers:
-                continue
-            selected_label = answers["choice"] #hämta det valda alternativet från svaret
+        answers = inquirer.prompt(self.questions) #hämta svaren från användaren genom att visa frågorna
 
-            #Hitta vilket Enum-objek som matchar valda labeln
-            answer = next(opt for opt in SimOption if opt.label == selected_label)
-            simulation_option = answer.key
+        #Hantera SimOptiom
+        selected_sim_label = answers["sim_choice"] #hämta det valda alternativet för simuleringsläge från svaret
+        sim_enum = next(opt for opt in SimOption if opt.label == selected_sim_label) #hitta vilket Enum-objek som matchar valda labeln
+        simulation_option = sim_enum.key #hämta nyckeln (t.ex. "gps") från det valda alternativet
+        #Hantera ObstacleOption
+        selected_obstacle_label = answers["obstacle_choice"]
+        obstacle_enum = next(opt for opt in ObstacleOption if opt.label == selected_obstacle_label) 
+        has_obstacles = obstacle_enum.active == "with_obstacles"
 
-            if answer == SimOption.GPS:
-                print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
-            elif answer == SimOption.WIRED:
-                print("Du har valt: " + answer.label) #skriver ut det som står i parantesen
+        #Spara i appstate
+        appState.simulation_option = simulation_option
+        appState.has_obstacles = has_obstacles
 
-            break #bryter loopen och avslutar programmet efter valet
-
-        #skriver ut en välkomsthälsning varje gång loopen börjar om
-        print("Välkommen till robotgräsklipparen!")
-        return simulation_option
+        print(f"Du har valt {simulation_option} {'med' if has_obstacles else 'utan'} hinder.")
