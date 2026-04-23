@@ -6,7 +6,6 @@ import settings
 if TYPE_CHECKING:
 	from world import World
 
-
 @dataclass
 class Robot:
 	x: float = settings.ROBOT_START_X
