@@ -30,23 +30,30 @@ class World:
 
 	# Helper function to check if a coordinate is within the lawn 
 	# boundaries, with padding for the robot's size. It also checks if the coordinate is colliding with any obstacles.
-	def is_inside(self, x: float, y: float, padding: float = 0.0) -> bool:
-		valid_path = True
+	def is_inside(self, x: float, y: float, padding: float = 0.0, record_collision: bool = True) -> bool:
+		collision_key: str | None = None
 		#Check if robot is on lawn
 		valid_path = self.lawn.is_hitting(x, y, padding)
-		for obstacle in self.obstacles.all_obstacles:
-			if obstacle.is_hitting(x, y, padding):
-				valid_path = False
-		
-		is_hitting_something = not valid_path
-		if is_hitting_something:
-				self.appState.collisions += 1
+		if not valid_path:
+			collision_key = "lawn"
 
 		if self.appState.has_obstacles:
-			for obstacle in self.obstacles.all_obstacles:
+			for index, obstacle in enumerate(self.obstacles.all_obstacles):
 				if obstacle.is_hitting(x, y, padding):
 					valid_path = False
+					collision_key = f"obstacle:{index}"
 					break
+
+		if record_collision:
+			is_hitting_something = not valid_path
+			if is_hitting_something:
+				if collision_key != self.appState.last_collision_key:
+					self.appState.collisions += 1
+				self.appState.is_colliding = True
+				self.appState.last_collision_key = collision_key
+			else:
+				self.appState.is_colliding = False
+				self.appState.last_collision_key = None
 			
 		return valid_path
 
