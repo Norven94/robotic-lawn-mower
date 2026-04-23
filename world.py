@@ -85,7 +85,8 @@ class World:
 		milestones_track = [LawnPointsOption.TESTING,LawnPointsOption.FIFTY,LawnPointsOption.SEVENTY,LawnPointsOption.NINETY,LawnPointsOption.NINETYFIVE]
 		milestone_goals = get_milestone_goals(self.lawn,milestones_track)
 		time_legend = axis.text(0.03,0.95, f"Tid:{self.appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
-		
+		length_legend = axis.text(0.03,0.90, f"Sträcka:{self.appState.distance}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
+		collision_legend = axis.text(0.03,0.85, f"Antal kollisioner:{self.appState.collisions}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
 
 		# Prepares visual elements to show where the robot has mowed
 		# and where the robot currently is.
@@ -145,8 +146,10 @@ class World:
 			robot_patch.center = robot.position
 			
 			time_legend.set_text(f"Tid: {self.appState.time:.1f} s")
+			length_legend.set_text(f"Sträcka: {self.appState.distance:.1f} m")
+			collision_legend.set_text(f"Antal kollisioner: {self.appState.collisions}")
 
-			return path_line, robot_patch, time_legend
+			return path_line, robot_patch, time_legend, length_legend, collision_legend
 
 		animation = FuncAnimation(
 			figure,
