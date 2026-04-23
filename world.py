@@ -9,9 +9,8 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 
-import appState
 from lawn import Lawn
-from utilities import getLawnPoints, sync_linewidth_to_data, LawnPointsOption
+from utilities import getLawnPoints, sync_linewidth_to_data, LawnPointsOption, get_milestone_goals, log_milestone_result
 
 import settings 
 from obstacles import Obstacles
@@ -19,12 +18,15 @@ from obstacles import Obstacles
 if TYPE_CHECKING:
 	from controller import Controller
 	from robot import Robot
+	from appState import AppState
 
 @dataclass
 class World:
+	appState: "AppState"
 	lawn = Lawn()
 	obstacles = Obstacles()
 	mowed_points: list[tuple[float, float]] = field(default_factory=list, init=False)
+	goal_points = getLawnPoints(lawn.max_x, lawn.min_x, lawn.max_y, lawn.min_y, LawnPointsOption.TESTING)
 
 	# Helper function to check if a coordinate is within the lawn 
 	# boundaries, with padding for the robot's size. It also checks if the coordinate is colliding with any obstacles.
@@ -35,6 +37,16 @@ class World:
 		for obstacle in self.obstacles.all_obstacles:
 			if obstacle.is_hitting(x, y, padding):
 				valid_path = False
+		
+		is_hitting_something = not valid_path
+		if is_hitting_something:
+				self.appState.collisions += 1
+
+		if self.appState.has_obstacles:
+			for obstacle in self.obstacles.all_obstacles:
+				if obstacle.is_hitting(x, y, padding):
+					valid_path = False
+					break
 			
 		return valid_path
 
@@ -50,16 +62,17 @@ class World:
 		axis.set_xlim(self.lawn.min_x, self.lawn.max_x)
 		axis.set_ylim(self.lawn.min_y, self.lawn.max_y)
 		axis.set_aspect("equal", adjustable="box")
-		axis.set_title("Lets add robot name from CLI here")
+		axis.set_title("Simulering av robotgräsklipparen: " + self.appState.robot_name)
 		axis.set_facecolor(settings.LAWN_COLOR)
 
 		lawn_boundary, allowed_boundary = self.lawn.getPatches()
 		axis.add_patch(lawn_boundary)
 		axis.add_patch(allowed_boundary)
 
-		obstacle_boundaries = self.obstacles.getPatches()
-		for obstacle in obstacle_boundaries:
-			axis.add_patch(obstacle)
+		if self.appState.has_obstacles:
+			obstacle_boundaries = self.obstacles.getPatches()
+			for obstacle in obstacle_boundaries:
+				axis.add_patch(obstacle)
 
 	# Main simulation loop, which also handles visualization using 
 	# Matplotlib. It utilizes FuncAnimation to update the robot's 
@@ -69,8 +82,11 @@ class World:
 		self.mark_mowed(robot.x, robot.y)
 		self.create_garden(axis)
 
-		time_legend = axis.text(0.03,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
-		goal_points = getLawnPoints(self.lawn.max_x, self.lawn.min_x, self.lawn.max_y, self.lawn.min_y, LawnPointsOption.TESTING)
+		milestones_track = [LawnPointsOption.TESTING,LawnPointsOption.FIFTY,LawnPointsOption.SEVENTY,LawnPointsOption.NINETY,LawnPointsOption.NINETYFIVE]
+		milestone_goals = get_milestone_goals(self.lawn,milestones_track)
+		time_legend = axis.text(0.03,0.95, f"Tid:{self.appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
+		length_legend = axis.text(0.03,0.90, f"Sträcka:{self.appState.distance}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
+		collision_legend = axis.text(0.03,0.85, f"Antal kollisioner:{self.appState.collisions}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
 
 		# Prepares visual elements to show where the robot has mowed
 		# and where the robot currently is.
@@ -100,12 +116,20 @@ class World:
 		# It updates the robot's position based on the controllers 
 		# logic and updates the visualization accordingly.
 		def update(_: int):
-			appState.time += settings.MOVE_DISTANCE/settings.ROBOT_REAL_SPEED_MPS
+			self.appState.time += settings.MOVE_DISTANCE/settings.ROBOT_REAL_SPEED_MPS
 			#Kolla alla unika punkter
 			amount_mowed = len(set(self.mowed_points))
 
+			#uppdaterar totala sträcka
+			self.appState.distance += settings.MOVE_DISTANCE
+
+			for i in range(len(milestones_track)):
+				milestone = milestones_track[i].value 
+				sub_goal = milestone_goals[i] 
+				log_milestone_result(milestone, sub_goal,amount_mowed, self.appState)
+
 			#Kollar om man nått målet, dvs 95% av gräsmattan klippt. Om så är fallet, stoppa roboten och skriv ut att klippningen är klar.
-			if amount_mowed >= goal_points and robot.is_active:
+			if amount_mowed >= self.goal_points and robot.is_active:
 				robot.is_active = False #Stängs av
 				print("Klippningen är klar!")
 				#Stoppa renderingen direkt när roboten stängs av
@@ -121,9 +145,11 @@ class World:
 
 			robot_patch.center = robot.position
 			
-			time_legend.set_text(f"Tid: {appState.time:.1f} s")
+			time_legend.set_text(f"Tid: {self.appState.time:.1f} s")
+			length_legend.set_text(f"Sträcka: {self.appState.distance:.1f} m")
+			collision_legend.set_text(f"Antal kollisioner: {self.appState.collisions}")
 
-			return path_line, robot_patch, time_legend
+			return path_line, robot_patch, time_legend, length_legend, collision_legend
 
 		animation = FuncAnimation(
 			figure,
@@ -136,3 +162,5 @@ class World:
 		)
 
 		plt.show()
+		print("Här är all statistik")
+		print(self.appState.results)
