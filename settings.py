@@ -8,6 +8,7 @@ LAWN_MAX_Y = 30.0
 # but for development we want it to be faster so we can see the results quicker. We need to rethink this 
 # when we implement statistics capturing.
 ANIMATION_INTERVAL_MS = 80
+SHOW_ANIMATION = True
 # Only effects the window size displayed on the screen, not 
 # the actual lawn dimensions
 FIGURE_SIZE = (10, 10)

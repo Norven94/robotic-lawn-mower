@@ -10,6 +10,7 @@ class AppState:
     done_milestones: set = field(default_factory=set)
     is_colliding: bool = False
     simulation_option: str = ""
+    animate_simulation: bool = True
     robot_name: str = ""
     time: float = 0.0
     has_obstacles: bool = False

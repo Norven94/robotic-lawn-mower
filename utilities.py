@@ -1,3 +1,5 @@
+from pathlib import Path
+import re
 from enum import Enum
 import settings
 
@@ -47,3 +49,43 @@ def log_milestone_result(milestone: float, sub_goal: float, amount_mowed: int, a
         
         appState.addResult(data)
         appState.addDoneMileStone(milestone)
+
+def save_simulation_results(appState: AppState) -> Path:
+    project_root = Path(__file__).resolve().parent
+    results_dir = project_root / "results"
+    results_dir.mkdir(exist_ok=True)
+
+    obstacle_status = "yes" if appState.has_obstacles else "no"
+    file_prefix = f"result-{appState.simulation_option}-{obstacle_status}."
+    increment_pattern = re.compile(rf"{re.escape(file_prefix)}(\d+)\.txt$")
+
+    highest_increment = 0
+    for existing_file in results_dir.glob(f"{file_prefix}*.txt"):
+        match = increment_pattern.match(existing_file.name)
+        if match:
+            highest_increment = max(highest_increment, int(match.group(1)))
+
+    next_increment = highest_increment + 1
+    result_path = results_dir / f"{file_prefix}{next_increment}.txt"
+    simulation_mode = "animated" if appState.animate_simulation else "instant"
+
+    lines = [
+        f"Robot name: {appState.robot_name}",
+        f"Simulation option: {appState.simulation_option}",
+        f"Simulation mode: {simulation_mode}",
+        f"Obstacles: {obstacle_status}",
+        f"Total time: {round(appState.time, 2)}",
+        f"Total distance: {round(appState.distance, 2)}",
+        f"Total collisions: {appState.collisions}",
+        "",
+        "Results:",
+    ]
+
+    if appState.results:
+        for index, result in enumerate(appState.results, start=1):
+            lines.append(f"{index}. {result}")
+    else:
+        lines.append("No milestone results were recorded.")
+
+    result_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return result_path
