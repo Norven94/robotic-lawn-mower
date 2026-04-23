@@ -110,6 +110,9 @@ class GPSController:
 			self._add_walk_before_turn(robot.move_distance)
 			return
 
+		if not (x_min <= next_x <= x_max):
+			world.is_inside(next_x, robot.y, padding=settings.ROBOT_SIZE)
+
 		full_row = self._current_walk_before_turn() >= self._current_full_length() - 1e-9
 		if not full_row:
 			cleanup_length = self._missed_length(robot, world, direction)
@@ -265,7 +268,7 @@ class GPSController:
 		last: float | None = None
 
 		while x_min <= x <= x_max:
-			if world.is_inside(x, robot.y, padding=settings.ROBOT_SIZE):
+			if world.is_inside(x, robot.y, padding=settings.ROBOT_SIZE, record_collision=False):
 				if first is None:
 					first = x
 				last = x
