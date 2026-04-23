@@ -6,7 +6,7 @@ from world import World
 
 def main() -> None:
 	appState = AppState()
-	world = World()
+	world = World(appState)
 	robot = Robot()
 	cli = CLI()
 
@@ -23,7 +23,7 @@ def main() -> None:
 	obstacle_status = "Ja" if appState.has_obstacles else "Nej"
 	print("Hinder aktiverade: " + obstacle_status)
 	
-	world.run_simulation(robot, controller, appState)
+	world.run_simulation(robot, controller)
 
 
 if __name__ == "__main__":

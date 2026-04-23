@@ -9,7 +9,6 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 
-import appState
 from lawn import Lawn
 from utilities import getLawnPoints, sync_linewidth_to_data, LawnPointsOption
 
@@ -19,21 +18,23 @@ from obstacles import Obstacles
 if TYPE_CHECKING:
 	from controller import Controller
 	from robot import Robot
+	from appState import AppState
 
 @dataclass
 class World:
+	appState: "AppState"
 	lawn = Lawn()
 	obstacles = Obstacles()
 	mowed_points: list[tuple[float, float]] = field(default_factory=list, init=False)
 
 	# Helper function to check if a coordinate is within the lawn 
 	# boundaries, with padding for the robot's size. It also checks if the coordinate is colliding with any obstacles.
-	def is_inside(self, x: float, y: float, appState, padding: float = 0.0) -> bool:
+	def is_inside(self, x: float, y: float, padding: float = 0.0) -> bool:
 		valid_path = True
 		#Check if robot is on lawn
 		valid_path = self.lawn.is_hitting(x, y, padding)
 
-		if appState.has_obstacles:
+		if self.appState.has_obstacles:
 			for obstacle in self.obstacles.all_obstacles:
 				if obstacle.is_hitting(x, y, padding):
 					valid_path = False
@@ -49,18 +50,18 @@ class World:
 
 	# This function sets up all static elements in the simulation like the lawn boundaries and obstacles. 
 	# It is called once at the beginning of the simulation.
-	def create_garden(self, axis: Axes, appState):
+	def create_garden(self, axis: Axes):
 		axis.set_xlim(self.lawn.min_x, self.lawn.max_x)
 		axis.set_ylim(self.lawn.min_y, self.lawn.max_y)
 		axis.set_aspect("equal", adjustable="box")
-		axis.set_title("Simulering av robotgräsklipparen: " + appState.robot_name)
+		axis.set_title("Simulering av robotgräsklipparen: " + self.appState.robot_name)
 		axis.set_facecolor(settings.LAWN_COLOR)
 
 		lawn_boundary, allowed_boundary = self.lawn.getPatches()
 		axis.add_patch(lawn_boundary)
 		axis.add_patch(allowed_boundary)
 
-		if appState.has_obstacles:
+		if self.appState.has_obstacles:
 			obstacle_boundaries = self.obstacles.getPatches()
 			for obstacle in obstacle_boundaries:
 				axis.add_patch(obstacle)
@@ -68,12 +69,12 @@ class World:
 	# Main simulation loop, which also handles visualization using 
 	# Matplotlib. It utilizes FuncAnimation to update the robot's 
 	# position and the mowed path in real-time.
-	def run_simulation(self, robot: "Robot", controller: "Controller", appState: "AppState") -> None:
+	def run_simulation(self, robot: "Robot", controller: "Controller") -> None:
 		figure, axis = plt.subplots(figsize=settings.FIGURE_SIZE)
 		self.mark_mowed(robot.x, robot.y)
-		self.create_garden(axis, appState)
+		self.create_garden(axis)
 
-		time_legend = axis.text(0.03,0.95, f"Tid:{appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
+		time_legend = axis.text(0.03,0.95, f"Tid:{self.appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
 		goal_points = getLawnPoints(self.lawn.max_x, self.lawn.min_x, self.lawn.max_y, self.lawn.min_y, LawnPointsOption.TESTING)
 
 		# Prepares visual elements to show where the robot has mowed
@@ -104,7 +105,7 @@ class World:
 		# It updates the robot's position based on the controllers 
 		# logic and updates the visualization accordingly.
 		def update(_: int):
-			appState.time += settings.MOVE_DISTANCE/settings.ROBOT_REAL_SPEED_MPS
+			self.appState.time += settings.MOVE_DISTANCE/settings.ROBOT_REAL_SPEED_MPS
 			#Kolla alla unika punkter
 			amount_mowed = len(set(self.mowed_points))
 
@@ -116,7 +117,7 @@ class World:
 				animation.event_source.stop()
 
 			if robot.is_active:
-				controller.step(robot, self, appState)
+				controller.step(robot, self)
 
 			# Update the path line with the new mowed coordinates
 			x_values = [point[0] for point in self.mowed_points]
@@ -125,7 +126,7 @@ class World:
 
 			robot_patch.center = robot.position
 			
-			time_legend.set_text(f"Tid: {appState.time:.1f} s")
+			time_legend.set_text(f"Tid: {self.appState.time:.1f} s")
 
 			return path_line, robot_patch, time_legend
 

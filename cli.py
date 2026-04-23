@@ -3,7 +3,6 @@ from dataclasses import dataclass
 import inquirer
 from enum import Enum
 
-import appState
 from settings import DEFAULT_ROBOT_NAME
 
 #def alternativen i en Enum
@@ -42,7 +41,7 @@ class CLI():
         )
     ]
 
-    def startApplication(self, appState) -> tuple:
+    def startApplication(self, appState):
         #fråga användaren efetr namn på roboten
         namn_input = input("Vad ska robotgräsklipparen heta? ")
         #om användaren inte skriver något, sätt namnet till "Per" annars, sätt namnet till det användaren skrev in.
@@ -55,23 +54,17 @@ class CLI():
 
         answers = inquirer.prompt(self.questions) #hämta svaren från användaren genom att visa frågorna
 
-#Hantera SimOptiom
+        #Hantera SimOptiom
         selected_sim_label = answers["sim_choice"] #hämta det valda alternativet för simuleringsläge från svaret
         sim_enum = next(opt for opt in SimOption if opt.label == selected_sim_label) #hitta vilket Enum-objek som matchar valda labeln
         simulation_option = sim_enum.key #hämta nyckeln (t.ex. "gps") från det valda alternativet
-#Hantera ObstacleOption
+        #Hantera ObstacleOption
         selected_obstacle_label = answers["obstacle_choice"]
         obstacle_enum = next(opt for opt in ObstacleOption if opt.label == selected_obstacle_label) 
         has_obstacles = obstacle_enum.active == "with_obstacles"
 
-#Spara i appstate
+        #Spara i appstate
         appState.simulation_option = simulation_option
         appState.has_obstacles = has_obstacles
 
         print(f"Du har valt {simulation_option} {'med' if has_obstacles else 'utan'} hinder.")
-
-        #skriver ut en välkomsthälsning varje gång loopen börjar om
-        print("Välkommen till robotgräsklipparen!")
-        
-        return simulation_option #returnerar nyckeln för det valda alternativet (t.ex. "gps_no")
-        return has_obstacles #returnerar om användaren vill ha hinder eller inte

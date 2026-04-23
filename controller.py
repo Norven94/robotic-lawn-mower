@@ -2,8 +2,6 @@ import random
 from math import cos, radians, sin
 from typing import TYPE_CHECKING, Protocol
 
-import appState
-
 if TYPE_CHECKING:
 	from robot import Robot
 	from world import World
@@ -13,19 +11,19 @@ if TYPE_CHECKING:
 # run_simulation function. This decides how the robot should work and 
 # move during the simulation. 
 class Controller(Protocol):
-	def step(self, robot: "Robot", world: "World", appState: "AppState") -> None:
+	def step(self, robot: "Robot", world: "World") -> None:
 		...
 
 class WiredController:
-	def next_position(self, robot: "Robot", distance: float, appState: "AppState") -> tuple[float, float]:
+	def next_position(self, robot: "Robot", distance: float) -> tuple[float, float]:
 		angle = radians(robot.heading)
 		next_x = robot.x + cos(angle) * distance
 		next_y = robot.y + sin(angle) * distance
 		return next_x, next_y
 
-	def step(self, robot: "Robot", world: "World", appState: "AppState") -> None:
-		next_x, next_y = self.next_position(robot, robot.move_distance, appState)
-		if not robot.move_forward(world, next_x, next_y, appState):
+	def step(self, robot: "Robot", world: "World") -> None:
+		next_x, next_y = self.next_position(robot, robot.move_distance)
+		if not robot.move_forward(world, next_x, next_y):
 			robot.heading = random.randint(0, 360)
 			return
 
@@ -34,7 +32,7 @@ class GPSController:
 		self.phase = "seek_down"
 		self.horizontal_direction = 1.0
 
-	def step(self, robot: "Robot", world: "World", appState: "AppState") -> None:
+	def step(self, robot: "Robot", world: "World") -> None:
 		if not robot.is_active:
 			return
 
@@ -42,7 +40,7 @@ class GPSController:
 		if self.phase == "seek_down":
 			next_x = robot.x
 			next_y = robot.y - robot.move_distance
-			if robot.move_forward(world, next_x, next_y, appState):
+			if robot.move_forward(world, next_x, next_y):
 				return
 
 			self.phase = "seek_left"
@@ -52,7 +50,7 @@ class GPSController:
 		if self.phase == "seek_left":
 			next_x = robot.x - robot.move_distance
 			next_y = robot.y
-			if robot.move_forward(world, next_x, next_y, appState):
+			if robot.move_forward(world, next_x, next_y):
 				return
 
 			self.horizontal_direction = 1.0
@@ -62,7 +60,7 @@ class GPSController:
 		if self.phase == "sweep":
 			next_x = robot.x + self.horizontal_direction * robot.move_distance
 			next_y = robot.y
-			if robot.move_forward(world, next_x, next_y, appState):
+			if robot.move_forward(world, next_x, next_y):
 				return
 
 			self.phase = "move_up"
@@ -70,7 +68,7 @@ class GPSController:
 		if self.phase == "move_up":
 			next_x = robot.x
 			next_y = robot.y + robot.move_distance
-			if robot.move_forward(world, next_x, next_y, appState):
+			if robot.move_forward(world, next_x, next_y):
 				self.horizontal_direction *= -1.0
 				self.phase = "sweep"
 				return
