@@ -12,16 +12,8 @@ class LawnPointsOption(Enum):
     NINETYFIVE = 0.95
     TESTING = 0.05
 
-def getLawnPoints(max_x, min_x, max_y, min_y, option: LawnPointsOption) -> float:
-    width_tot = max_x - min_x
-    height_tot = max_y - min_y
-
-    #Hämta procentvärde från enum baserat på det valda alternativet
-    ratio = option.value
-
-    #Räkna ut hur många punkter det finns på en viss procent (ratio) av ytan
-    total_points = (width_tot * height_tot) / (settings.MOVE_DISTANCE ** 2)
-    return total_points * ratio
+def get_milestone_points(total_points: int, option: LawnPointsOption) -> int:
+    return round(total_points * option.value)
 
 def data_height_to_points(figure, axis, data_height: float) -> float:
 	# Convert a vertical world/data distance to matplotlib points
@@ -34,11 +26,10 @@ def sync_linewidth_to_data(path_line, figure, axis, data_height: float) -> None:
 	# Set a line's linewidth so it matches a distance in world/data units. 
 	path_line.set_linewidth(data_height_to_points(figure, axis, data_height))
 
-def get_milestone_goals(lawn, milestones_track: list[LawnPointsOption]) -> list[float]:
+def get_milestone_goals(total_points: int, milestones_track: list[LawnPointsOption]) -> list[int]:
     goals = []
-    for m in milestones_track:
-          points = getLawnPoints(lawn.max_x,lawn.min_x,lawn.max_y,lawn.min_y,m)
-          goals.append(points)
+    for milestone in milestones_track:
+        goals.append(get_milestone_points(total_points, milestone))
     return goals
 
 def log_milestone_result(milestone: float, sub_goal: float, amount_mowed: int, appState: AppState) -> None:

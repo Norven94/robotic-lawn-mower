@@ -9,8 +9,9 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Rectangle
 
+from coverage import GridCoverage
 from lawn import Lawn
-from utilities import getLawnPoints, sync_linewidth_to_data, LawnPointsOption, get_milestone_goals, log_milestone_result, save_simulation_results
+from utilities import get_milestone_points, sync_linewidth_to_data, LawnPointsOption, get_milestone_goals, log_milestone_result, save_simulation_results
 
 import settings 
 from obstacles import Obstacles
@@ -26,7 +27,10 @@ class World:
 	lawn = Lawn()
 	obstacles = Obstacles()
 	mowed_points: list[tuple[float, float]] = field(default_factory=list, init=False)
-	goal_points = getLawnPoints(lawn.max_x, lawn.min_x, lawn.max_y, lawn.min_y, LawnPointsOption.TESTING)
+	mowed_cells: set[tuple[int, int]] = field(default_factory=set, init=False)
+	mowable_cells: set[tuple[int, int]] = field(default_factory=set, init=False)
+	goal_points: int = field(default=0, init=False)
+	coverage_grid: GridCoverage = field(init=False)
 	milestones_track = [
 		LawnPointsOption.TESTING,
 		LawnPointsOption.FIFTY,
@@ -34,6 +38,17 @@ class World:
 		LawnPointsOption.NINETY,
 		LawnPointsOption.NINETYFIVE,
 	]
+
+	def __post_init__(self) -> None:
+		# Coverage tracking is kept separate from the plotted path so milestone
+		# counting stays controller-agnostic.
+		self.coverage_grid = GridCoverage(
+			self.lawn.min_x,
+			self.lawn.max_x,
+			self.lawn.min_y,
+			self.lawn.max_y,
+			settings.MOVE_DISTANCE,
+		)
 
 	# Helper function to check if a coordinate is within the lawn 
 	# boundaries, with padding for the robot's size. It also checks if the coordinate is colliding with any obstacles.
@@ -70,6 +85,12 @@ class World:
 		if not self.mowed_points or self.mowed_points[-1] != point:
 			self.mowed_points.append(point)
 
+		# Track coverage on the precomputed mowable grid rather than by raw
+		# floating-point positions.
+		cell_key = self.coverage_grid.nearest_valid_cell_key(self.mowable_cells, x, y)
+		if cell_key is not None:
+			self.mowed_cells.add(cell_key)
+
 	# This function sets up all static elements in the simulation like the lawn boundaries and obstacles. 
 	# It is called once at the beginning of the simulation.
 	def create_garden(self, axis: Axes):
@@ -88,13 +109,24 @@ class World:
 			for obstacle in obstacle_boundaries:
 				axis.add_patch(obstacle)
 
-	def setup_simulation(self, robot: "Robot") -> list[float]:
+	def setup_simulation(self, robot: "Robot") -> list[int]:
+		# Build milestone targets from reachable cells only, so obstacle area does
+		# not make 90% and 95% impossible.
+		self.mowable_cells = self.coverage_grid.collect_valid_cells(
+			lambda cell_x, cell_y: self.is_inside(
+				cell_x,
+				cell_y,
+				padding=settings.ROBOT_SIZE,
+				record_collision=False,
+			)
+		)
+		self.goal_points = get_milestone_points(len(self.mowable_cells), LawnPointsOption.NINETYFIVE)
 		self.mark_mowed(robot.x, robot.y)
-		return get_milestone_goals(self.lawn, self.milestones_track)
+		return get_milestone_goals(len(self.mowable_cells), self.milestones_track)
 
-	def step_simulation(self, robot: "Robot", controller: "Controller", milestone_goals: list[float]) -> bool:
+	def step_simulation(self, robot: "Robot", controller: "Controller", milestone_goals: list[int]) -> bool:
 		self.appState.time += settings.MOVE_DISTANCE / settings.ROBOT_REAL_SPEED_MPS
-		amount_mowed = len(set(self.mowed_points))
+		amount_mowed = len(self.mowed_cells)
 
 		self.appState.distance += settings.MOVE_DISTANCE
 
