@@ -26,10 +26,11 @@ class World:
 	lawn = Lawn()
 	obstacles = Obstacles()
 	mowed_points: list[tuple[float, float]] = field(default_factory=list, init=False)
+	goal_points = getLawnPoints(lawn.max_x, lawn.min_x, lawn.max_y, lawn.min_y, LawnPointsOption.TESTING)
 
 	# Helper function to check if a coordinate is within the lawn 
 	# boundaries, with padding for the robot's size. It also checks if the coordinate is colliding with any obstacles.
-	def is_inside(self, x: float, y: float, padding: float = 0.0, track_collision: bool = False) -> bool:
+	def is_inside(self, x: float, y: float, padding: float = 0.0) -> bool:
 		valid_path = True
 		#Check if robot is on lawn
 		valid_path = self.lawn.is_hitting(x, y, padding)
@@ -37,14 +38,9 @@ class World:
 			if obstacle.is_hitting(x, y, padding):
 				valid_path = False
 		
-		if track_collision:
-			is_hitting_something = not valid_path
-			if is_hitting_something:
-				if not appState.is_colliding:
-					appState.collisions += 1
-					appState.is_colliding = True
-				else:
-					appState.is_colliding = False
+		is_hitting_something = not valid_path
+		if is_hitting_something:
+				self.appState.collisions += 1
 
 		if self.appState.has_obstacles:
 			for obstacle in self.obstacles.all_obstacles:
@@ -89,7 +85,7 @@ class World:
 		milestones_track = [LawnPointsOption.TESTING,LawnPointsOption.FIFTY,LawnPointsOption.SEVENTY,LawnPointsOption.NINETY,LawnPointsOption.NINETYFIVE]
 		milestone_goals = get_milestone_goals(self.lawn,milestones_track)
 		time_legend = axis.text(0.03,0.95, f"Tid:{self.appState.time}", transform=axis.transAxes, fontsize=12,fontweight='bold', bbox=dict(facecolor='white',alpha=0.5))
-		goal_points = getLawnPoints(self.lawn.max_x, self.lawn.min_x, self.lawn.max_y, self.lawn.min_y, LawnPointsOption.TESTING)
+		
 
 		# Prepares visual elements to show where the robot has mowed
 		# and where the robot currently is.
@@ -124,25 +120,15 @@ class World:
 			amount_mowed = len(set(self.mowed_points))
 
 			#uppdaterar totala sträcka
-			appState.distance += settings.MOVE_DISTANCE
-
-            #Kollar antalet krockar
-			is_hitting_something= not self.is_inside(robot.x, robot.y, padding=settings.ROBOT_DIAMETER/2, track_collision=True)
-
+			self.appState.distance += settings.MOVE_DISTANCE
 
 			for i in range(len(milestones_track)):
-				m = milestones_track[i] 
-				goal_points = milestone_goals[i] 
-
-				if amount_mowed>= goal_points and m not in appState.logged_milestones:
-
-					velocity = settings.ROBOT_REAL_SPEED_MPS
-					energy = (settings.ROBOT_POWER/velocity) * appState.distance if velocity > 0 else 0 
-
-					log_milestone_result(m,energy)
+				milestone = milestones_track[i].value 
+				sub_goal = milestone_goals[i] 
+				log_milestone_result(milestone, sub_goal,amount_mowed, self.appState)
 
 			#Kollar om man nått målet, dvs 95% av gräsmattan klippt. Om så är fallet, stoppa roboten och skriv ut att klippningen är klar.
-			if amount_mowed >= goal_points and robot.is_active:
+			if amount_mowed >= self.goal_points and robot.is_active:
 				robot.is_active = False #Stängs av
 				print("Klippningen är klar!")
 				#Stoppa renderingen direkt när roboten stängs av
@@ -174,4 +160,4 @@ class World:
 
 		plt.show()
 		print("Här är all statistik")
-		print(appState.results)
+		print(self.appState.results)

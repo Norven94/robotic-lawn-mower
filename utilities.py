@@ -1,11 +1,12 @@
 from enum import Enum
 import settings
-import appState
+
+from appState import AppState
 
 class LawnPointsOption(Enum):
     FIFTY = 0.5
-    SEVENTY = 0.7
-    NINETY = 0.9
+    SEVENTY = 0.07
+    NINETY = 0.09
     NINETYFIVE = 0.95
     TESTING = 0.05
 
@@ -38,7 +39,11 @@ def get_milestone_goals(lawn, milestones_track: list[LawnPointsOption]) -> list[
           goals.append(points)
     return goals
 
-def log_milestone_result(m, energy:float):
-    data = {"percentage_done":f"{int(m.value * 100)}%", "total length": round(appState.distance,2), "total collision": appState.collisions, "total energy": round(energy,2),"total_time":round(appState.time,2)}
-    appState.results.append(data)
-    appState.logged_milestones.add(m)
+def log_milestone_result(milestone: float, sub_goal: float, amount_mowed: int, appState: AppState) -> None:
+    if amount_mowed>= sub_goal and milestone not in appState.done_milestones:
+        velocity = settings.ROBOT_REAL_SPEED_MPS
+        energy = (settings.ROBOT_POWER/velocity) * appState.distance if velocity > 0 else 0 
+        data = {"percentage_done":f"{int(milestone * 100)}%", "total length": round(appState.distance,2), "total collision": appState.collisions, "total energy": round(energy,2),"total_time":round(appState.time,2)}
+        
+        appState.addResult(data)
+        appState.addDoneMileStone(milestone)
