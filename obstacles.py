@@ -16,6 +16,11 @@ class Obstacle(Protocol):
     width: float
     height: float
     type: str
+
+    @property
+    def radius(self) -> float | None:
+        ...
+
     def is_hitting(self, robot_x, robot_y, padding) -> bool:
         ...
 
@@ -39,8 +44,8 @@ class Obstacles:
     def getPatches(self) -> list[Rectangle | Circle]:
         patches: list[Rectangle | Circle] = []
 
-        #Rectangle
         for obstacle in self.all_obstacles:
+            #Rectangle
             if obstacle.type == "rectangle":
                 renderd_obstacle = Rectangle(
                     (obstacle.x, obstacle.y),
@@ -65,8 +70,8 @@ class Obstacles:
                 patches.append(renderd_obstacle)
                 patches.append(obstacle_border)
             
-            #Cirle
-            if obstacle.type == "circle":
+            #Circle
+            if obstacle.type == "circle" and obstacle.radius is not None:
                 # Add code here to handle rendering of circular elements.
                 renderd_obstacle = Circle(
                     (obstacle.x, obstacle.y),
@@ -99,6 +104,7 @@ class RectangleObstacles:
     width: float
     height: float
     type: str = "rectangle"
+    radius: float | None = None
 
     def is_hitting(self, robot_x, robot_y, padding) -> bool:
         within_x =self.x - padding<= robot_x <= self.x + self.width + padding
@@ -121,4 +127,4 @@ class CircleObstacles:
 
     def is_hitting(self, robot_x, robot_y, padding) -> bool:
         distance = ((robot_x - self.x)**2 + (robot_y - self.y)**2)**0.5
-        return distance <= (self.raduis + padding)
+        return distance <= (self.radius + padding)
