@@ -47,6 +47,7 @@ class CleanupZone:
 	phase: str = "enter"
 	pending_cleanup_length: float | None = None
 	pending_direction: float | None = None
+	reverse_cleanup: bool = False
 
 class GPSController:
 	def __init__(self) -> None:
@@ -99,7 +100,11 @@ class GPSController:
 	def default_walk(self, robot: "Robot", world: "World") -> None:
 
 		current_phase = self._current_phase()
-		if current_phase in {"enter", "move_up"}:
+		if current_phase == "search_drop":
+			self._search_drop_position(robot, world)
+			return
+
+		if current_phase in {"enter", "move_up", "move_same_direction", "cleanup_drop"}:
 			self._move_vertical(robot, world)
 			return
 
@@ -123,7 +128,10 @@ class GPSController:
 			self._create_cleanup(robot)
 			return
 
-		self._set_current_phase("move_up")
+		next_phase = "move_up"
+		if self._is_reverse_cleanup() and not full_row:
+			next_phase = "move_same_direction"
+		self._set_current_phase(next_phase)
 		self._move_vertical(robot, world)
 
 	# Finds a path through already visited points back to a stored cleanup origin.
@@ -176,14 +184,31 @@ class GPSController:
 		current_phase = self._current_phase()
 		vertical_direction = self._current_vertical_direction()
 		next_y = self._round_value(robot.y + vertical_direction * robot.move_distance)
+		if current_phase == "cleanup_drop":
+			if not robot.move_forward(world, robot.x, next_y):
+				if self.cleanup:
+					self._start_cleanup_return(robot, world)
+					return
+				robot.is_active = False
+				return
+
+			self._set_walk_before_turn(0.0)
+			self._set_current_phase("sweep")
+			return
+
 		next_point = (self._round_value(robot.x), next_y)
+		can_move_vertical = world.is_inside(robot.x, next_y, padding=settings.ROBOT_SIZE, record_collision=False)
 		was_visited = next_point in self._visited_points(world)
 
-		if self.cleanup and was_visited and current_phase != "enter":
+		if self.cleanup and was_visited and current_phase not in {"enter", "move_same_direction"} and can_move_vertical:
 			self._start_cleanup_return(robot, world)
 			return
 
 		if not robot.move_forward(world, robot.x, next_y):
+			blocked_by_obstacle = world.lawn.is_hitting(robot.x, next_y, padding=settings.ROBOT_SIZE)
+			if current_phase in {"move_up", "move_same_direction"} and blocked_by_obstacle and self._begin_reverse_drop_search(robot, world):
+				return
+
 			if self.cleanup:
 				self._start_cleanup_return(robot, world)
 				return
@@ -194,10 +219,51 @@ class GPSController:
 		self._set_walk_before_turn(0.0)
 		if current_phase == "enter" and was_visited:
 			return
+		if current_phase == "move_same_direction":
+			self._set_current_phase("sweep")
+			return
 
-		if current_phase != "enter":
+		if current_phase not in {"enter", "search_drop"}:
 			self._set_horizontal_direction(-self._current_horizontal_direction())
 		self._set_current_phase("sweep")
+
+	# Backs up along the current row until a blocked vertical transition opens.
+	def _search_drop_position(self, robot: "Robot", world: "World") -> None:
+		next_y = self._round_value(robot.y + self._current_vertical_direction() * robot.move_distance)
+		if robot.move_forward(world, robot.x, next_y):
+			self._set_walk_before_turn(0.0)
+			if self._is_reverse_cleanup():
+				self._set_horizontal_direction(-self._current_horizontal_direction())
+				self._set_current_phase("sweep")
+				return
+			self._set_current_phase("sweep")
+			return
+
+		direction = self._current_horizontal_direction()
+		x_min, x_max = self._current_bounds()
+		next_x = self._round_value(robot.x + direction * robot.move_distance)
+		if not (x_min <= next_x <= x_max):
+			robot.is_active = False
+			return
+
+		if not robot.move_forward(world, next_x, robot.y):
+			robot.is_active = False
+
+	# Switches the root sweep into a reverse search when the normal drop is blocked.
+	def _begin_reverse_drop_search(self, robot: "Robot", world: "World") -> bool:
+
+		reverse_direction = -self._current_horizontal_direction()
+		x_min, x_max = self._current_bounds()
+		next_x = self._round_value(robot.x + reverse_direction * robot.move_distance)
+		if not (x_min <= next_x <= x_max):
+			return False
+
+		if not world.is_inside(next_x, robot.y, padding=settings.ROBOT_SIZE, record_collision=False):
+			return False
+
+		self._set_horizontal_direction(reverse_direction)
+		self._set_current_phase("search_drop")
+		return True
 
 	# Queues a path back to the active cleanup origin once that cleanup is done.
 	def _start_cleanup_return(self, robot: "Robot", world: "World") -> None:
@@ -236,6 +302,33 @@ class GPSController:
 			cleanup_direction=-pending_direction,
 			horizontal_direction=-pending_direction,
 			vertical_direction=-self._current_vertical_direction(),
+		)
+		if self.cleanup:
+			self.cleanup[-1].cleanup.append(cleanup_zone)
+		self.cleanup.append(cleanup_zone)
+
+	# Pushes a cleanup zone from a reverse-search handoff at the side of an obstacle.
+	def _create_reverse_cleanup(self, robot: "Robot") -> None:
+
+		pending_cleanup = self._consume_pending_cleanup()
+		if pending_cleanup is None:
+			self._set_current_phase("sweep")
+			return
+
+		cleanup_length, pending_direction = pending_cleanup
+		if cleanup_length <= 0:
+			self._set_current_phase("sweep")
+			return
+
+		self._set_current_phase("sweep")
+		cleanup_zone = CleanupZone(
+			cleanup_origin=self._round_point(robot.position),
+			cleanup_full_length=cleanup_length,
+			cleanup_direction=pending_direction,
+			horizontal_direction=pending_direction,
+			vertical_direction=-self._current_vertical_direction(),
+			phase="cleanup_drop",
+			reverse_cleanup=True,
 		)
 		if self.cleanup:
 			self.cleanup[-1].cleanup.append(cleanup_zone)
@@ -377,6 +470,11 @@ class GPSController:
 			current = self.cleanup[-1]
 			return current.pending_cleanup_length is not None and current.pending_direction is not None
 		return self.pending_cleanup_length is not None and self.pending_direction is not None
+
+	# Indicates that the active cleanup uses obstacle-side tracebacks instead of plain row returns.
+	def _is_reverse_cleanup(self) -> bool:
+
+		return bool(self.cleanup and self.cleanup[-1].reverse_cleanup)
 
 	# Returns the horizontal bounds for the active sweep level.
 	def _current_bounds(self) -> tuple[float, float]:
