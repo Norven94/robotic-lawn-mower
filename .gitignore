@@ -11,6 +11,9 @@ __pycache__/
 venv/
 env/
 
+# Results
+results/
+
 # Test and tooling caches
 .pytest_cache/
 .mypy_cache/

@@ -21,3 +21,17 @@ pip install inquirer
 ```bash
 python index.py
 ```
+
+The CLI now asks whether the simulation should run as animated or instant. Both modes use the same simulation logic.
+
+After each run, a text file is written to `results/` using this format:
+
+```text
+result-{simulation_option}-{yes|no}.{n}.txt
+```
+
+Example:
+
+```text
+result-gps-yes.1.txt
+```

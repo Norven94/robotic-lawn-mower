@@ -23,7 +23,7 @@ def main() -> None:
 	obstacle_status = "Ja" if appState.has_obstacles else "Nej"
 	print("Hinder aktiverade: " + obstacle_status)
 	
-	world.run_simulation(robot, controller)
+	world.run_simulation(robot, controller, animate=appState.animate_simulation)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ class AppState:
     is_colliding: bool = False
     last_collision_key: str | None = None
     simulation_option: str = ""
+    animate_simulation: bool = True
     robot_name: str = ""
     time: float = 0.0
     has_obstacles: bool = False
