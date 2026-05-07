@@ -10,6 +10,7 @@ class LawnPointsOption(Enum):
     SEVENTY = 0.7
     NINETY = 0.9
     NINETYFIVE = 0.95
+    NINETY_NINE = 0.99
     TESTING = 0.05
 
 def get_milestone_points(total_points: int, option: LawnPointsOption) -> int:
