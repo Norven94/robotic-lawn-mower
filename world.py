@@ -37,6 +37,7 @@ class World:
 		LawnPointsOption.SEVENTY,
 		LawnPointsOption.NINETY,
 		LawnPointsOption.NINETYFIVE,
+		LawnPointsOption.NINETY_NINE,
 	]
 
 	def __post_init__(self) -> None:
@@ -120,7 +121,7 @@ class World:
 				record_collision=False,
 			)
 		)
-		self.goal_points = get_milestone_points(len(self.mowable_cells), LawnPointsOption.NINETYFIVE)
+		self.goal_points = get_milestone_points(len(self.mowable_cells), LawnPointsOption.NINETY_NINE)
 		self.mark_mowed(robot.x, robot.y)
 		return get_milestone_goals(len(self.mowable_cells), self.milestones_track)
 
