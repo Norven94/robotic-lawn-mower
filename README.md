@@ -52,3 +52,12 @@ Example:
 ```text
 result-gps-yes.1.txt
 ```
+
+## Simulated examples
+
+GPS
+<img width="1032" height="1071" alt="gps-simulering-2" src="https://github.com/user-attachments/assets/8abf1d90-b1af-4749-aca8-3b3dbdb4cfbd" />
+
+Wired
+<img width="1102" height="1092" alt="slumpad-simulering-2" src="https://github.com/user-attachments/assets/8abc23c4-9d25-4548-87c2-2b3e4407da4b" />
+
